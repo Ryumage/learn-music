@@ -44,7 +44,7 @@ test('keine Requests nach außen', async ({ page }) => {
   expect(external).toEqual([]);
 });
 
-test('startet offline nach dem ersten Besuch', async ({ page, context }) => {
+test('startet offline nach dem ersten Besuch @offline', async ({ page, context }) => {
   await page.goto('./');
   await page.evaluate(async () => {
     const reg = await navigator.serviceWorker.ready;

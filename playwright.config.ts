@@ -18,6 +18,16 @@ export default defineConfig({
     {
       name: `iphone-13-${browser}`,
       use: { ...devices['iPhone 13'], defaultBrowserType: browser },
+      grepInvert: /@offline/,
+    },
+    {
+      // Playwright-WebKit bricht context.setOffline() mit aktivem Service Worker
+      // mit „WebKit encountered an internal error“ ab. Der Offline-Start wird daher
+      // in Chromium geprüft (gleicher Service Worker, gleiches Precache);
+      // auf dem echten iPhone wird er in MS7 manuell abgenommen.
+      name: 'offline-chromium',
+      use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' },
+      grep: /@offline/,
     },
   ],
   webServer: {

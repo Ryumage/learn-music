@@ -16,8 +16,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -26,11 +26,11 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Playwright WebKit installieren
-        run: npx playwright install --with-deps webkit
-      - name: E2E (WebKit, iPhone 13)
+      - name: Playwright-Browser installieren
+        run: npx playwright install --with-deps webkit chromium
+      - name: E2E (WebKit/iPhone 13, Offline-Test in Chromium)
         run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: failure()
         with:
           name: playwright-report
