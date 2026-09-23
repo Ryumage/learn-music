@@ -1,0 +1,62 @@
+:root {
+  color-scheme: light dark;
+
+  --font-body: 'Atkinson Hyperlegible', system-ui, -apple-system, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Atkinson Hyperlegible', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-music: 'Noto Music Subset', serif;
+
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --surface-2: #e9edf4;
+  --text: #0f172a;
+  --text-muted: #526075;
+  --border: #d5dbe5;
+  --accent: #1e40af;
+  --accent-strong: #1e3a8a;
+  --accent-soft: #dbe4fb;
+  --on-accent: #ffffff;
+  --ok: #15803d;
+  --ok-soft: #dcfce7;
+  --bad: #b91c1c;
+  --bad-soft: #fee2e2;
+  --focus: #f59e0b;
+
+  --wood: #4a2c1d;
+  --fret: #c7ccd1;
+  --nut: #efe6cf;
+  --inlay: #f3efe6;
+  --string: #d9d4c7;
+  --string-wound: #b8904f;
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --tap: 44px;
+  --gutter: 16px;
+  --shadow: 0 1px 2px rgb(15 23 42 / 6%), 0 4px 16px rgb(15 23 42 / 6%);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1220;
+    --surface: #161d2e;
+    --surface-2: #1f283c;
+    --text: #e8edf6;
+    --text-muted: #9aa7bd;
+    --border: #2b364d;
+    --accent: #7c9cf5;
+    --accent-strong: #a5bbf8;
+    --accent-soft: #1f2d57;
+    --on-accent: #0b1020;
+    --ok: #4ade80;
+    --ok-soft: #12311f;
+    --bad: #f87171;
+    --bad-soft: #3a1618;
+    --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
+  }
+}

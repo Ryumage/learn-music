@@ -1,0 +1,15 @@
+/* Alle Schriften liegen lokal im Build, keine Requests nach außen. */
+@import '@fontsource/atkinson-hyperlegible/latin-400.css';
+@import '@fontsource/atkinson-hyperlegible/latin-700.css';
+@import '@fontsource/bricolage-grotesque/latin-700.css';
+@import '@fontsource/ibm-plex-mono/latin-400.css';
+
+/* Noto Music, reduziert auf 𝄠 ♯ ♭ ♮ (scripts/subset-music-font.py) */
+@font-face {
+  font-family: 'Noto Music Subset';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('../assets/fonts/noto-music-subset.woff2') format('woff2');
+  unicode-range: U+1D120, U+266D-266F;
+}
