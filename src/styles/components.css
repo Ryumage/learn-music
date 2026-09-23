@@ -435,7 +435,7 @@ a.icon-btn {
   border-radius: var(--radius-sm);
   padding: 12px 14px;
   border: 2px solid transparent;
-  max-height: 55dvh;
+  max-height: 40dvh;
   overflow-y: auto;
 }
 
@@ -757,4 +757,102 @@ a.icon-btn {
 
 .cd-arrow {
   fill: var(--accent);
+}
+
+/* Notenzeile (M2) */
+.figure-staff {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  margin-bottom: 14px;
+}
+
+.staff-system + .staff-system {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+}
+
+.staff-system svg.staff {
+  display: block;
+  width: 100%;
+  max-width: none;
+  height: auto;
+}
+
+.staff-fields {
+  display: grid;
+  align-items: start;
+  margin-top: 2px;
+}
+
+.staff-cell {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.note-field.is-compact {
+  width: calc(100% - 2px);
+  max-width: 44px;
+  min-width: 30px;
+  height: 44px;
+  padding: 0;
+  font-size: 0.82rem;
+  letter-spacing: -0.02em;
+  border-radius: 8px;
+}
+
+.staff-cell .note-field-solution {
+  padding: 0 3px;
+  font-size: 0.85rem;
+}
+
+.st-hit {
+  fill: transparent;
+}
+
+.st-note[data-action] {
+  cursor: pointer;
+}
+
+.st-note.st-active .st-head,
+.st-note.st-active .st-acc {
+  fill: var(--accent);
+}
+
+.st-note.st-ok .st-head,
+.st-note.st-ok .st-acc {
+  fill: var(--ok);
+}
+
+.st-note.st-bad .st-head,
+.st-note.st-bad .st-acc {
+  fill: var(--bad);
+}
+
+.part-solutions {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+.part-solutions li {
+  margin: 2px 0;
+}
+
+.hint-table {
+  border-collapse: collapse;
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+}
+
+.hint-table td {
+  padding: 3px 12px 3px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.hint-table td:first-child {
+  font-weight: 700;
 }

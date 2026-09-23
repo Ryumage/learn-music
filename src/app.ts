@@ -37,6 +37,18 @@ export class App {
     o.root.addEventListener('click', (e) => this.onClick(e));
     window.addEventListener('hashchange', () => this.render());
     window.addEventListener('keydown', (e) => this.onKey(e));
+    let lastWidth = window.innerWidth;
+    window.addEventListener('resize', () => {
+      if (window.innerWidth === lastWidth || this.route().name !== 'quiz') return;
+      lastWidth = window.innerWidth;
+      this.render();
+    });
+  }
+
+  /** Breite für Grafiken: Inhaltsbreite ohne Seitenränder und Rahmen der Grafik. */
+  private figureWidth(): number {
+    const content = Math.min(document.documentElement.clientWidth || window.innerWidth, 640);
+    return content - 2 * 16 - 2 * 6 - 2;
   }
 
   get store(): Store {
@@ -68,7 +80,7 @@ export class App {
     if (r.name === 'setup') {
       const mod = findModule(r.id!)?.def;
       if (!mod) return this.go('#/');
-      root.innerHTML = renderSetup(mod, this.moduleSettings(mod), this.store);
+      root.innerHTML = renderSetup(mod, this.moduleSettings(mod), this.store, lang);
     } else if (r.name === 'quiz') {
       if (!this.session?.current) return this.go('#/');
       root.innerHTML = renderQuiz({
@@ -77,6 +89,7 @@ export class App {
         lang,
         hints: this.store.settings.hints,
         confirmAbort: this.confirmAbort,
+        width: this.figureWidth(),
       });
     } else if (r.name === 'summary') {
       if (!this.session || !this.summary) return this.go('#/');
@@ -168,7 +181,12 @@ export class App {
       case 'start-due': {
         const mod = findModule(r.id ?? '')?.def;
         if (!mod) return;
-        const forced = a === 'start-due' ? dueKeys(mod, this.moduleSettings(mod), this.store).slice(0, mod.count(this.moduleSettings(mod))) : undefined;
+        const settings = this.moduleSettings(mod);
+        let forced: string[] | undefined;
+        if (a === 'start-due') {
+          const due = dueKeys(mod, settings, this.store);
+          forced = (mod.groupForced ? mod.groupForced(due, settings) : due).slice(0, mod.count(settings));
+        }
         return this.start(mod, forced);
       }
       case 'letter':

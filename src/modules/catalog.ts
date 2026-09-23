@@ -1,3 +1,4 @@
+import { staffModule } from './staffReading';
 import { stringsModule } from './strings';
 import type { ModuleDef } from './types';
 
@@ -13,7 +14,7 @@ export interface ModuleInfo {
 
 export const MODULES: readonly ModuleInfo[] = [
   { id: 'strings', badge: 'M1', name: stringsModule.name, desc: 'Namen, Nummern und Lage der Leersaiten.', def: stringsModule },
-  { id: 'staff', badge: 'M2', name: 'Noten lesen', desc: 'Eine Zeile Noten im System benennen, auch übereinander.' },
+  { id: 'staff', badge: 'M2', name: staffModule.name, desc: 'Eine Zeile Noten im System benennen, auch übereinander.', def: staffModule },
   { id: 'read', badge: 'M3', name: 'Noten → Griffbrett', desc: 'Note im System finden und auf dem Griffbrett antippen.' },
   { id: 'fret', badge: 'M4', name: 'Griffbrett', desc: 'Töne benennen, auf einer Saite finden, alle Stellen finden.' },
   { id: 'chords', badge: 'M5', name: 'Akkorde', desc: 'Diagramme lesen, Griffe setzen, Akkordtöne nennen.' },

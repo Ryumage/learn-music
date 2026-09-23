@@ -3,6 +3,8 @@ import { renderNoteFields, renderNoteKeyboard, type FieldState, type NoteInput }
 import type { Session } from '../learn/session';
 import { isComplete } from '../learn/session';
 import type { Lang } from '../music/names';
+import type { MarkState } from '../render/staff';
+import { renderStaffRow } from './staffRow';
 import { ICONS } from '../render/icons';
 import { esc } from '../util/html';
 
@@ -12,6 +14,8 @@ export interface QuizView {
   lang: Lang;
   hints: boolean;
   confirmAbort: boolean;
+  /** verfügbare Breite für Grafiken in px */
+  width: number;
 }
 
 function feedback(v: QuizView): string {
@@ -25,10 +29,23 @@ function feedback(v: QuizView): string {
       ? `<button type="button" class="btn" data-action="retry">Nochmal</button>
          <button type="button" class="btn btn-primary" data-action="reveal">Lösung zeigen</button>`
       : `<button type="button" class="btn btn-primary" data-action="next" data-testid="next">Weiter</button>`;
+  const wrongCount = c.parts.filter((ok) => !ok).length;
+  const partList =
+    c.phase === 'revealed' && q.kind === 'notes' && q.partSolutions
+      ? `<ul class="part-solutions">${q.partSolutions
+          .filter((_, i) => !c.parts[i])
+          .map((t) => `<li>${esc(t)}</li>`)
+          .join('')}</ul>`
+      : '';
+  const wrongMsg =
+    c.wrongText ||
+    (q.kind === 'notes' && q.fields.length > 1
+      ? `${wrongCount} von ${q.fields.length} ${q.fields.length === 1 ? 'Antwort' : 'Antworten'} stimmen nicht. Die roten Felder werden bei „Nochmal“ geleert.`
+      : 'Die Antwort stimmt nicht.');
   const body =
     c.phase === 'wrong'
-      ? `<p>${esc(c.wrongText || 'Die markierten Antworten stimmen nicht.')}</p>`
-      : `${c.phase === 'revealed' && c.wrongText ? `<p>${esc(c.wrongText)}</p>` : ''}${q.explain}${q.after ?? ''}`;
+      ? `<p>${esc(wrongMsg)}</p>`
+      : `${c.phase === 'revealed' && c.wrongText ? `<p>${esc(c.wrongText)}</p>` : ''}${partList}${q.explain}${q.after ?? ''}`;
   return `<section class="feedback ${cls}" role="status" aria-live="polite" data-testid="feedback">
       <h2>${title}</h2>
       ${body}
@@ -51,12 +68,23 @@ export function renderQuiz(v: QuizView): string {
       c.phase === 'answering'
         ? v.input.locked.map((l) => (l ? 'ok' : null))
         : c.parts.map((ok) => (ok ? 'ok' : 'bad'));
-    answerArea = renderNoteFields(v.input, v.lang, {
+    const fieldOpts = {
       labels: q.fields.map((f) => f.label),
       states,
       solution: c.phase === 'revealed' ? q.fields.map((f, i) => (c.parts[i] ? null : f.answer)) : undefined,
       interactive: answering,
-    });
+    };
+    answerArea = q.staff
+      ? `<div class="figure-staff">${renderStaffRow({
+          columns: q.staff.columns,
+          fields: q.staff.fields,
+          input: v.input,
+          lang: v.lang,
+          width: v.width,
+          fieldOpts,
+          states: states.map((st) => (st === 'ok' ? 'ok' : st === 'bad' ? 'bad' : null)) as MarkState[],
+        })}</div>`
+      : renderNoteFields(v.input, v.lang, fieldOpts);
     if (answering) dockInput = renderNoteKeyboard(v.lang, q.accidentals);
   } else if (q.kind === 'choice') {
     const sel = typeof c.answer === 'number' ? c.answer : null;

@@ -68,3 +68,41 @@ export function fretDerivation(p: Position, lang: Lang): string {
   const prefix = start === 12 ? '12. Bund = Oktave der Leersaite: ' : '';
   return `${head}: ${prefix}${chain.join(' → ')}`;
 }
+
+/**
+ * Greifbarkeit eines Mehrklangs (PLAN M2): jeder Ton auf einer eigenen Saite,
+ * alle Bünde im erlaubten Bereich, gegriffene Bünde höchstens maxSpan auseinander.
+ * Liefert eine Zuordnung (Backtracking) oder null.
+ */
+export function playable(sounding: readonly number[], maxFret: number, maxSpan = 3, minFret = 0): Position[] | null {
+  const notes = [...sounding].sort((a, b) => a - b);
+  const used = new Set<StringNo>();
+  const chosen: Position[] = [];
+
+  const spanOk = () => {
+    const fretted = chosen.map((p) => p.fret).filter((f) => f > 0);
+    return fretted.length === 0 || Math.max(...fretted) - Math.min(...fretted) <= maxSpan;
+  };
+
+  const place = (i: number): boolean => {
+    if (i === notes.length) return true;
+    for (const s of STRINGS) {
+      if (used.has(s)) continue;
+      const fret = notes[i]! - OPEN_MIDI[s];
+      if (fret < minFret || fret > maxFret) continue;
+      used.add(s);
+      chosen.push({ string: s, fret });
+      if (spanOk() && place(i + 1)) return true;
+      chosen.pop();
+      used.delete(s);
+    }
+    return false;
+  };
+
+  return place(0) ? [...chosen] : null;
+}
+
+/** Bequemste Stelle für einen Einzelton: kleinster Bund bis maxFret. */
+export function easiestPosition(sounding: number, maxFret = 12): Position | null {
+  return positionsOf(sounding, maxFret).sort((a, b) => a.fret - b.fret)[0] ?? null;
+}
