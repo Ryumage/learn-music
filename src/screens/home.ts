@@ -1,31 +1,44 @@
+import type { Store } from '../learn/store';
 import { MODULES } from '../modules/catalog';
+import { ICONS } from '../render/icons';
 import { esc } from '../util/html';
 
 export interface HomeOptions {
   showInstallHint: boolean;
   baseUrl: string;
+  store: Store;
 }
 
-const GEAR_ICON =
-  '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>';
+export function statsLine(s: { answers: number; correct: number; due: number }): string {
+  if (s.answers === 0) return 'Noch nicht geübt';
+  const pct = Math.round((100 * s.correct) / s.answers);
+  return `${pct} % richtig · ${s.answers} ${s.answers === 1 ? 'Antwort' : 'Antworten'} · ${s.due} fällig`;
+}
 
-export function renderHome({ showInstallHint, baseUrl }: HomeOptions): string {
-  const modules = MODULES.map(
-    (m) => `
-      <li class="card module">
+export function renderHome({ showInstallHint, baseUrl, store }: HomeOptions): string {
+  const modules = MODULES.map((m) => {
+    const inner = `
         <span class="badge" aria-hidden="true">${esc(m.badge)}</span>
-        <div>
+        <div class="module-text">
           <h3>${esc(m.name)}</h3>
           <p>${esc(m.desc)}</p>
-        </div>
-        <span class="soon">bald</span>
-      </li>`,
-  ).join('');
+          ${m.def ? `<p class="module-stats">${esc(statsLine(store.summary(m.def.prefixes)))}</p>` : ''}
+        </div>`;
+    return m.def
+      ? `<li><a class="card module is-ready" href="#/m/${esc(m.id)}" data-testid="module-${esc(m.id)}">${inner}<span class="chev">${ICONS.chevron}</span></a></li>`
+      : `<li class="card module">${inner}<span class="soon">bald</span></li>`;
+  }).join('');
+
+  const today = store.today();
+  const goal = store.settings.dailyGoal;
+  const streak = store.streak();
+  const progress = Math.min(100, Math.round((100 * today) / goal));
 
   const installHint = showInstallHint
     ? `<p class="card install-hint" data-testid="install-hint">
         <strong>Tipp:</strong> In Safari auf <strong>Teilen → Zum Home-Bildschirm</strong> tippen.
         Dann startet Saitenlesen ohne Browserleiste, läuft offline und dein Lernstand bleibt erhalten.
+        (Safari löscht Website-Daten sonst nach 7 Tagen ohne Besuch.)
       </p>`
     : '';
 
@@ -34,20 +47,19 @@ export function renderHome({ showInstallHint, baseUrl }: HomeOptions): string {
       <header class="topbar">
         <img class="logo" src="${esc(baseUrl)}favicon.svg" alt="" width="40" height="40" />
         <h1>Saitenlesen</h1>
-        <button class="icon-btn" type="button" aria-label="Einstellungen (kommt bald)" disabled>${GEAR_ICON}</button>
+        <a class="icon-btn" href="#/settings" aria-label="Einstellungen">${ICONS.gear}</a>
       </header>
 
       <section class="card hero" aria-labelledby="hero-title">
         <span class="clef" aria-hidden="true">\u{1D120}</span>
-        <h2 id="hero-title">Gitarre lesen lernen</h2>
-        <p>Noten, Griffbrett, Saiten, Akkorde, Tabs und Rhythmus – in kurzen Runden, auch offline.</p>
+        <h2 id="hero-title">Heute: ${today} von ${goal} Antworten</h2>
+        <div class="bar" role="progressbar" aria-label="Tagesziel" aria-valuemin="0" aria-valuemax="${goal}" aria-valuenow="${Math.min(today, goal)}"><span style="width:${progress}%"></span></div>
+        <p>${streak > 0 ? `${streak} ${streak === 1 ? 'Tag' : 'Tage'} in Folge geübt.` : 'Kurze Runden, jeden Tag ein bisschen.'}</p>
       </section>
 
       <h2 class="section-title">Lernweg</h2>
       <ol class="module-list">${modules}</ol>
 
       ${installHint}
-
-      <p class="footer">Die Übungen folgen Schritt für Schritt.</p>
     </main>`;
 }

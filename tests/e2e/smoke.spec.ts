@@ -6,6 +6,7 @@ test('Startseite lädt auf Deutsch', async ({ page }) => {
   await expect(page.locator('html')).toHaveAttribute('lang', 'de');
   await expect(page.getByRole('heading', { level: 1, name: 'Saitenlesen' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Noten lesen' })).toBeVisible();
+  await expect(page.getByTestId('module-strings')).toBeVisible();
 });
 
 test('Manifest und Icons sind für die Installation vorhanden', async ({ page, request }) => {
