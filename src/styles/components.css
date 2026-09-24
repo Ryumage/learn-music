@@ -1229,3 +1229,189 @@ a.icon-btn {
   margin: 0 0 6px;
   font-weight: 700;
 }
+
+/* Akkorde (M5) */
+.chord-answer {
+  min-height: 56px;
+  display: grid;
+  place-items: center;
+  margin: 4px 0 8px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.4rem;
+}
+
+.chord-answer.is-ok {
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.chord-answer.is-bad {
+  border-color: var(--bad);
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.key.is-on {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-strong);
+}
+
+.chord-row-acc {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.chord-row-suffix {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+.key-suffix {
+  font-size: 0.95rem;
+}
+
+.figure-chord svg.chord-diagram {
+  max-width: 250px;
+}
+
+.cd-mute {
+  fill: var(--text);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.cd-open {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2;
+}
+
+.cd-dot circle,
+.cd-barre {
+  fill: var(--text);
+}
+
+.cd-dot text {
+  fill: var(--surface);
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--font-body);
+}
+
+.cd-fr,
+.cd-name {
+  fill: var(--text-muted);
+  font-size: 13px;
+  font-family: var(--font-body);
+  font-weight: 700;
+}
+
+.cd-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.chord-diagram.is-editable .cd-dot circle {
+  fill: var(--accent);
+}
+
+.chord-diagram.is-editable .cd-dot text {
+  fill: var(--on-accent);
+}
+
+.cd-dot.cd-ok circle,
+.cd-string.cd-ok {
+  fill: var(--ok);
+  stroke: var(--ok);
+}
+
+.cd-dot.cd-bad circle,
+.cd-string.cd-bad {
+  fill: var(--bad);
+  stroke: var(--bad);
+}
+
+.hb-trap {
+  padding: 6px 10px;
+  border-left: 3px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 6px;
+}
+
+/* Akkordwechsel-Trainer */
+.changes-diagrams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.changes-diagram {
+  margin: 0;
+  padding: 8px;
+  text-align: center;
+}
+
+.changes-diagram figcaption {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.changes-diagram svg {
+  width: 100%;
+  max-width: 170px;
+  height: auto;
+}
+
+.changes-tap {
+  width: 100%;
+  min-height: 42dvh;
+  margin: 0 0 12px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.changes-tap:active {
+  filter: brightness(1.1);
+}
+
+.changes-count {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 4rem;
+  line-height: 1;
+  margin: 0;
+}
+
+.changes-time {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+
+.record {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.feedback svg.chord-diagram {
+  display: block;
+  width: 140px;
+  height: auto;
+  margin: 0 auto;
+}

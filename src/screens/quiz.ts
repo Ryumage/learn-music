@@ -5,7 +5,9 @@ import { isComplete } from '../learn/session';
 import type { Lang } from '../music/names';
 import { landscapeGeometry, renderFretboard, samePosition, type FretMarker, type FretView } from '../render/fretboard';
 import type { MarkState } from '../render/staff';
-import type { BoardSpec, TapAnswer } from '../modules/types';
+import type { BoardSpec, ChordAnswer, ShapeAnswer, TapAnswer } from '../modules/types';
+import { chordAnswerText, renderChordKeyboard } from '../input/chordKeyboard';
+import { renderChordShape } from '../render/chordDiagram';
 import type { Position } from '../music/guitar';
 import { renderStaffRow } from './staffRow';
 import { ICONS } from '../render/icons';
@@ -90,10 +92,11 @@ function feedback(v: QuizView): string {
     (q.kind === 'notes' && q.fields.length > 1
       ? `${wrongCount} von ${q.fields.length} ${q.fields.length === 1 ? 'Antwort' : 'Antworten'} stimmen nicht. Die roten Felder werden bei „Nochmal“ geleert.`
       : 'Die Antwort stimmt nicht.');
+  const okNote = c.phase === 'correct' && q.kind === 'shape' && q.noteOk ? q.noteOk(c.answer as ShapeAnswer) : '';
   const body =
     c.phase === 'wrong'
       ? `<p>${esc(wrongMsg)}</p>`
-      : `${c.phase === 'revealed' && c.wrongText ? `<p>${esc(c.wrongText)}</p>` : ''}${partList}${q.explain}${q.after ?? ''}`;
+      : `${okNote ? `<p><b>${esc(okNote)}</b></p>` : ''}${c.phase === 'revealed' && c.wrongText ? `<p>${esc(c.wrongText)}</p>` : ''}${partList}${q.explain}${q.after ?? ''}`;
   return `<section class="feedback ${cls}" role="status" aria-live="polite" data-testid="feedback">
       <h2>${title}</h2>
       ${body}
@@ -159,6 +162,22 @@ export function renderQuiz(v: QuizView): string {
     if (answering) {
       answerArea += `<p class="muted small tap-hint">${q.multi ? `Mehrere Stellen möglich – nochmal tippen hebt die Auswahl auf. Ausgewählt: ${sel.length}` : 'Tippe auf eine Stelle; ein neuer Tipp ersetzt die Auswahl.'}</p>`;
     }
+  } else if (q.kind === 'chord') {
+    const a = (c.answer as ChordAnswer | null) ?? { root: null, suffix: null };
+    const text = chordAnswerText(a, v.lang);
+    const st = answering ? '' : c.parts[0] ? ' is-ok' : ' is-bad';
+    answerArea = `<div class="chord-answer${st}" data-testid="chord-answer" aria-live="polite">${text ? esc(text) : '<span class="muted">Grundton und Zusatz wählen</span>'}</div>`;
+    if (answering) dockInput = renderChordKeyboard(a, v.lang);
+  } else if (q.kind === 'shape') {
+    const shape = (c.answer as ShapeAnswer | null) ?? [0, 0, 0, 0, 0, 0];
+    const ok = c.parts[0];
+    answerArea = `<div class="figure figure-chord">${renderChordShape({
+      shape,
+      editable: answering,
+      names: q.names(shape),
+      states: answering ? undefined : shape.map(() => (ok ? 'ok' : 'bad')),
+      label: 'Griffdiagramm zum Bearbeiten',
+    })}</div>${answering ? '<p class="muted small tap-hint">Punkt setzen: in die Zelle tippen, nochmal tippen entfernt ihn. Über dem Sattel: ○ leer / × nicht spielen.</p>' : ''}`;
   } else if (q.kind === 'choice') {
     const sel = typeof c.answer === 'number' ? c.answer : null;
     const states: ChoiceState[] = q.options.map((_, i) => {

@@ -1,7 +1,10 @@
 import { expect, type Page } from '@playwright/test';
 
 export interface Probe {
-  kind: 'notes' | 'choice' | 'tap';
+  kind: 'notes' | 'choice' | 'tap' | 'chord' | 'shape';
+  root?: { letter: number; acc: number };
+  suffix?: string;
+  shape?: (number | null)[];
   phase: string;
   fields?: { letter: number; acc: number }[];
   correct?: number;
@@ -24,6 +27,14 @@ export async function answer(page: Page, correct: boolean): Promise<void> {
   if (p.kind === 'choice') {
     const i = correct ? p.correct! : (p.correct! + 1) % p.options!;
     await page.locator(`[data-choice="${i}"]`).click();
+  } else if (p.kind === 'chord') {
+    await page.locator(`[data-action=chord-root][data-letter="${p.root!.letter}"]`).click();
+    if (p.root!.acc) await page.locator(`[data-action=chord-acc][data-acc="${p.root!.acc}"]`).click();
+    const suffix = correct ? p.suffix! : p.suffix === 'm' ? '' : 'm';
+    await page.locator(`[data-action=chord-suffix][data-suffix="${suffix}"]`).click();
+  } else if (p.kind === 'shape') {
+    if (correct) await setShape(page, p.shape!);
+    else await page.locator('[data-action=cd-cell][data-index="0"][data-fret="1"]').click();
   } else if (p.kind === 'tap') {
     if (correct) {
       for (const t of p.multi ? p.targets! : p.targets!.slice(0, 1)) await cell(page, t.string, t.fret).click();
@@ -41,6 +52,14 @@ export async function answer(page: Page, correct: boolean): Promise<void> {
     }
   }
   await page.getByTestId('check').click();
+}
+
+/** Setzt einen Griff im editierbaren Diagramm (Start: alle Saiten leer). */
+export async function setShape(page: Page, shape: (number | null)[]): Promise<void> {
+  for (const [i, f] of shape.entries()) {
+    if (f === null) await page.locator(`[data-action=cd-open][data-index="${i}"]`).click();
+    else if (f > 0) await page.locator(`[data-action=cd-cell][data-index="${i}"][data-fret="${f}"]`).click();
+  }
 }
 
 export async function startModule(page: Page, id: string, count = '10'): Promise<void> {

@@ -66,6 +66,8 @@ export interface NotesQuestion extends QuestionBase {
   fields: NoteField[];
   /** exact = Schreibweise muss stimmen (Notensystem), pc = nur die Tonklasse */
   compare: 'exact' | 'pc';
+  /** Reihenfolge egal (z. B. Akkordtöne) */
+  unordered?: boolean;
   /** Vorzeichentasten zeigen */
   accidentals: boolean;
   /** Element je Feld, wenn jedes Feld ein eigenes Element ist (M2) */
@@ -109,11 +111,40 @@ export interface TapQuestion extends QuestionBase {
   describe?: (selected: Position[]) => string;
 }
 
-export type Question = NotesQuestion | ChoiceQuestion | TapQuestion;
+/** Antwort per Akkordtastatur: Grundton + Zusatz */
+export interface ChordAnswer {
+  root: Spelling | null;
+  suffix: string | null;
+}
+
+export interface ChordQuestion extends QuestionBase {
+  kind: 'chord';
+  answer: { root: Spelling; suffix: string };
+  describe?: (given: ChordAnswer) => string;
+}
+
+/** Griff setzen: Bund je Saite (tief → hoch), null = nicht gespielt */
+export type ShapeAnswer = (number | null)[];
+
+export interface ShapeQuestion extends QuestionBase {
+  kind: 'shape';
+  /** Prüfung des gesetzten Griffs */
+  grade: (shape: ShapeAnswer) => boolean;
+  /** Tonname je Saite für die Live-Anzeige */
+  names: (shape: ShapeAnswer) => (string | null)[];
+  /** Standardgriff für die Lösung */
+  solutionShape: ShapeAnswer;
+  solutionFingers?: string | null;
+  describe?: (shape: ShapeAnswer) => string;
+  /** Zusatz bei richtiger Antwort, z. B. „Umkehrung“ */
+  noteOk?: (shape: ShapeAnswer) => string;
+}
+
+export type Question = NotesQuestion | ChoiceQuestion | TapQuestion | ChordQuestion | ShapeQuestion;
 
 export type NotesAnswer = (Spelling | null)[];
 export type TapAnswer = Position[];
-export type Answer = NotesAnswer | TapAnswer | number | null;
+export type Answer = NotesAnswer | TapAnswer | ChordAnswer | ShapeAnswer | number | null;
 
 export interface ModuleDef {
   id: string;

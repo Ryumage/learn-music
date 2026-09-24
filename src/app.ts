@@ -1,17 +1,20 @@
 import { play, playSequence, setSoundEnabled, unlockAudio } from './audio/pluck';
+import { pressChordAccidental, pressRoot, pressSuffix } from './input/chordKeyboard';
 import { createInput, pressAccidental, pressBackspace, pressLetter, selectField, type NoteInput } from './input/noteKeyboard';
 import { Session } from './learn/session';
 import { Store, type ModuleSettings } from './learn/store';
 import { heatmapData, weakest } from './learn/stats';
 import { findModule, MODULES } from './modules/catalog';
 import { dailyModule, dailyQuestions, dueCount } from './modules/daily';
-import { defaultSettings, type ModuleDef, type NotesAnswer, type TapAnswer } from './modules/types';
+import { defaultSettings, type ChordAnswer, type ModuleDef, type NotesAnswer, type ShapeAnswer, type TapAnswer } from './modules/types';
+import { shapeMidi } from './music/chords';
 import { fretMidi, type StringNo } from './music/guitar';
 import { renderHome } from './screens/home';
 import { renderQuiz } from './screens/quiz';
 import { dueKeys, renderSetup, toggleSetting } from './screens/setup';
 import { renderSettings, type DataUi } from './screens/settings';
 import { renderStats } from './screens/stats';
+import { CHANGES_MS, formatClock, pairKey, renderChanges, type ChangesState } from './screens/changes';
 import { renderHeatmap } from './render/heatmap';
 import { esc } from './util/html';
 import { renderSummary, summarize, type SummaryData } from './screens/summary';
@@ -28,7 +31,11 @@ export interface AppOptions {
 
 /** Test-Schnittstelle für E2E: Lösung der aktuellen Frage. */
 export interface QuizProbe {
-  kind: 'notes' | 'choice' | 'tap';
+  kind: 'notes' | 'choice' | 'tap' | 'chord' | 'shape';
+  /** chord: Grundton und Zusatz; shape: Standardgriff */
+  root?: { letter: number; acc: number };
+  suffix?: string;
+  shape?: (number | null)[];
   phase: string;
   /** tap: richtige Stellen; tappable: antippbare Zellen */
   targets?: { string: number; fret: number }[];
@@ -45,6 +52,9 @@ export class App {
   private confirmAbort = false;
   private summary: SummaryData | null = null;
   private lastModule: ModuleDef | null = null;
+  private changes: ChangesState | null = null;
+  private changesTimer: number | undefined;
+  private wakeLock: { release: () => Promise<void> } | null = null;
   private dataUi: DataUi = { exportText: '', importText: '', confirmImport: false, confirmReset: false, message: null };
 
   constructor(private o: AppOptions) {
@@ -53,6 +63,8 @@ export class App {
     // iOS startet Audio nur aus einer Nutzeraktion heraus
     o.root.addEventListener('pointerdown', () => unlockAudio(), { passive: true });
     window.addEventListener('hashchange', () => {
+      // Trainer verlassen: laufende Runde beenden, ohne zu speichern
+      if (this.changes?.phase === 'running' && this.route().name !== 'changes') this.finishChanges(false);
       // Meldungen und Rückfragen der Einstellungen gelten nur, solange man dort ist
       this.dataUi = { ...this.dataUi, confirmImport: false, confirmReset: false, message: null };
       this.render();
@@ -97,7 +109,7 @@ export class App {
     const h = location.hash.replace(/^#\/?/, '');
     const [name, id] = h.split('/');
     if (name === 'm' && id) return { name: 'setup', id };
-    if (name === 'quiz' || name === 'summary' || name === 'settings' || name === 'stats') return { name };
+    if (['quiz', 'summary', 'settings', 'stats', 'changes'].includes(name ?? '')) return { name: name! };
     return { name: 'home' };
   }
 
@@ -140,6 +152,9 @@ export class App {
     } else if (r.name === 'settings') {
       this.dataUi.exportText = this.store.exportJson();
       root.innerHTML = renderSettings(this.store.settings, this.dataUi);
+    } else if (r.name === 'changes') {
+      const st = this.changesState();
+      root.innerHTML = renderChanges(st, this.store.data.best[pairKey(st.a, st.b)] ?? 0, this.store.now(), lang);
     } else if (r.name === 'stats') {
       root.innerHTML = renderStats(this.store, DEFS);
     } else {
@@ -168,6 +183,56 @@ export class App {
           .join('')}</ol>`;
     }
     return '';
+  }
+
+  /** Zustand des Akkordwechsel-Trainers; die Auswahl wird gemerkt. */
+  private changesState(): ChangesState {
+    if (!this.changes) {
+      const saved = this.store.data.modules.changes ?? {};
+      this.changes = { a: (saved.a as string) ?? 'A', b: (saved.b as string) ?? 'D', phase: 'setup', endsAt: 0, count: 0, previousBest: 0 };
+    }
+    return this.changes;
+  }
+
+  private startChanges(): void {
+    const st = this.changesState();
+    st.phase = 'running';
+    st.count = 0;
+    st.previousBest = this.store.data.best[pairKey(st.a, st.b)] ?? 0;
+    st.endsAt = this.store.now() + CHANGES_MS;
+    // Bildschirm wach halten; Fehler (z. B. nicht unterstützt) still ignorieren
+    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } };
+    nav.wakeLock?.request('screen').then((l) => (this.wakeLock = l), () => {});
+    window.clearInterval(this.changesTimer);
+    this.changesTimer = window.setInterval(() => this.tickChanges(), 200);
+    this.render();
+  }
+
+  private tickChanges(): void {
+    const st = this.changes;
+    if (!st || st.phase !== 'running') return window.clearInterval(this.changesTimer);
+    const left = st.endsAt - this.store.now();
+    if (left <= 0) return this.finishChanges();
+    const el = this.o.root.querySelector('[data-testid=changes-time]');
+    if (el) el.textContent = formatClock(left);
+  }
+
+  private finishChanges(save = true): void {
+    const st = this.changes!;
+    window.clearInterval(this.changesTimer);
+    this.wakeLock?.release().catch(() => {});
+    this.wakeLock = null;
+    if (!save) {
+      st.phase = 'setup';
+      return this.render();
+    }
+    st.phase = 'done';
+    const key = pairKey(st.a, st.b);
+    if (st.count > (this.store.data.best[key] ?? 0)) {
+      this.store.data.best[key] = st.count;
+      this.store.save();
+    }
+    this.render();
   }
 
   private startDaily(): void {
@@ -311,6 +376,36 @@ export class App {
         if (this.store.settings.sound && !has) play([fretMidi(pos.string, pos.fret)]);
         return this.render();
       }
+      case 'chord-root':
+      case 'chord-acc':
+      case 'chord-suffix': {
+        if (!c || c.question.kind !== 'chord' || c.phase !== 'answering') return;
+        const cur = (c.answer as ChordAnswer) ?? { root: null, suffix: null };
+        c.answer =
+          a === 'chord-root'
+            ? pressRoot(cur, Number(el.dataset.letter))
+            : a === 'chord-acc'
+              ? pressChordAccidental(cur, Number(el.dataset.acc) as 1 | -1)
+              : pressSuffix(cur, el.dataset.suffix ?? '');
+        return this.render();
+      }
+      case 'cd-open':
+      case 'cd-cell': {
+        if (!c || c.question.kind !== 'shape' || c.phase !== 'answering') return;
+        const shape = [...((c.answer as ShapeAnswer) ?? [0, 0, 0, 0, 0, 0])];
+        const i = Number(el.dataset.index);
+        if (a === 'cd-open') shape[i] = shape[i] === null ? 0 : null;
+        else {
+          const f = Number(el.dataset.fret);
+          shape[i] = shape[i] === f ? 0 : f;
+        }
+        c.answer = shape;
+        if (this.store.settings.sound && shape[i] !== null) {
+          const m = shapeMidi(shape.map((x, j) => (j === i ? x : null)));
+          play(m);
+        }
+        return this.render();
+      }
       case 'listen':
         return this.playQuestion();
       case 'sound-test':
@@ -349,6 +444,30 @@ export class App {
         if (this.lastModule?.id === 'daily') return this.startDaily();
         if (this.lastModule) this.start(this.lastModule);
         return;
+      case 'changes-pick': {
+        const st = this.changesState();
+        if (el.dataset.slot === 'a') st.a = el.dataset.id!;
+        else st.b = el.dataset.id!;
+        this.store.data.modules.changes = { a: st.a, b: st.b };
+        this.store.save();
+        return this.render();
+      }
+      case 'changes-start':
+        return this.startChanges();
+      case 'changes-tap': {
+        const st = this.changes;
+        if (!st || st.phase !== 'running') return;
+        if (st.endsAt - this.store.now() <= 0) return this.finishChanges();
+        st.count++;
+        const el2 = this.o.root.querySelector('[data-testid=changes-count]');
+        if (el2) el2.textContent = String(st.count);
+        return;
+      }
+      case 'changes-stop':
+        return this.finishChanges(false);
+      case 'changes-setup':
+        this.changesState().phase = 'setup';
+        return this.render();
       case 'start-daily':
         return this.startDaily();
       case 'export-copy': {
@@ -469,6 +588,8 @@ export class App {
     const q = c.question;
     if (q.kind === 'choice') return { kind: 'choice', phase: c.phase, correct: q.correct, options: q.options.length };
     if (q.kind === 'tap') return { kind: 'tap', phase: c.phase, targets: q.targets.map((t) => ({ ...t })), multi: q.multi };
+    if (q.kind === 'chord') return { kind: 'chord', phase: c.phase, root: { ...q.answer.root }, suffix: q.answer.suffix };
+    if (q.kind === 'shape') return { kind: 'shape', phase: c.phase, shape: [...q.solutionShape] };
     return { kind: 'notes', phase: c.phase, fields: q.fields.map((f) => ({ letter: f.answer.letter, acc: f.answer.acc })) };
   }
 }
