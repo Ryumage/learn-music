@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { fretDerivation, fretMidi, OPEN_MIDI, positionsOf, stringLetter, stringName } from '../../src/music/guitar';
+import {
+  easiestPosition,
+  fretDerivation,
+  fretMidi,
+  OPEN_MIDI,
+  playable,
+  positionsOf,
+  stringLetter,
+  stringName,
+} from '../../src/music/guitar';
 
 describe('Gitarre', () => {
   it('Leersaiten klingend (PLAN 4.1)', () => {
@@ -34,5 +43,48 @@ describe('Gitarre', () => {
       'hohe E-Saite, 14. Bund: 12. Bund = Oktave der Leersaite: E → F → Fis/Ges',
     );
     expect(fretDerivation({ string: 5, fret: 3 }, 'en')).toBe('A-Saite, 3. Bund: A → A♯/B♭ → B → C');
+  });
+});
+
+describe('Spielbarkeit von Mehrklängen (PLAN M2)', () => {
+  it('Positivbeispiele', () => {
+    // G3 + H3 + D4 (G-Dur-Dreiklang, 1. Lage)
+    expect(playable([43, 47, 50], 4)).not.toBeNull();
+    // Leersaiten E und H
+    expect(playable([40, 59], 4)).not.toBeNull();
+    // Oktave e und E im 12. Bund-Bereich
+    expect(playable([52, 64], 12)).not.toBeNull();
+  });
+
+  it('jeder Ton auf einer eigenen Saite', () => {
+    const pos = playable([45, 50, 55, 59], 4)!;
+    expect(new Set(pos.map((p) => p.string)).size).toBe(4);
+  });
+
+  it('Negativbeispiele', () => {
+    // E2 und F2 liegen nur auf der tiefen E-Saite
+    expect(playable([40, 41], 4)).toBeNull();
+    // zu hoch für die 1. Lage
+    expect(playable([60, 69], 4)).toBeNull();
+    // F2 nur auf der tiefen E-Saite (1. Bund), A4 frühestens hohe E-Saite 5. Bund: Spannweite 4
+    expect(playable([41, 69], 12)).toBeNull();
+    expect(playable([41, 69], 12, 4)).not.toBeNull();
+    // sieben Töne passen nicht auf sechs Saiten
+    expect(playable([40, 45, 50, 55, 59, 64, 69], 12)).toBeNull();
+  });
+
+  it('gegriffene Bünde höchstens 3 auseinander, Leersaiten zählen nicht', () => {
+    // F2 (E-Saite 1) + Gis3 (G-Saite 1) + hohe E-Saite leer
+    expect(playable([41, 56, 64], 4)).not.toBeNull();
+    // Ais2 (A-Saite 1) + E4: auf der H-Saite (5. Bund) zu weit, als Leersaite passt es
+    const p = playable([46, 64], 5)!;
+    expect(p).toEqual([
+      { string: 5, fret: 1 },
+      { string: 1, fret: 0 },
+    ]);
+  });
+
+  it('bequemste Stelle', () => {
+    expect(easiestPosition(69)).toEqual({ string: 1, fret: 5 });
   });
 });

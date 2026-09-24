@@ -162,3 +162,19 @@ describe('Sitzung (PLAN 5.1/5.2)', () => {
     expect(s.current!.question.items).toEqual(['k:3']);
   });
 });
+
+describe('Fehlerschleife bei Notenzeilen', () => {
+  it('wiederholt die erste falsche Note', () => {
+    const { s } = setup(['k:multi', 'k:1', 'k:2', 'k:3', 'k:4']);
+    s.next();
+    s.current!.answer = [{ letter: 0, acc: 0 }, { letter: 3, acc: 0 }];
+    s.check();
+    s.reveal();
+    const asked: string[] = [];
+    while (s.next()) {
+      asked.push(`${s.current!.isRetry ? 'R' : ''}${s.current!.question.items[0]}`);
+      answerCurrent(s, true);
+    }
+    expect(asked).toContain('Rk:m2');
+  });
+});

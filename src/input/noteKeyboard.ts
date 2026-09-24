@@ -90,28 +90,35 @@ export function renderNoteKeyboard(lang: Lang, accidentals: boolean, disabled = 
 
 export type FieldState = 'ok' | 'bad' | 'solution' | null;
 
-/** Antwortfelder als Buttons (keine <input>, damit die iOS-Tastatur zu bleibt). */
-export function renderNoteFields(
-  input: NoteInput,
-  lang: Lang,
-  opts: { labels?: (string | undefined)[]; states?: FieldState[]; solution?: (Spelling | null)[]; interactive: boolean },
-): string {
+export interface FieldOptions {
+  labels?: (string | undefined)[];
+  states?: FieldState[];
+  solution?: (Spelling | null)[];
+  interactive: boolean;
+  compact?: boolean;
+}
+
+/** Ein Antwortfeld als Button (keine <input>, damit die iOS-Tastatur zu bleibt). */
+export function renderField(input: NoteInput, i: number, lang: Lang, opts: FieldOptions): string {
+  const a = input.answer[i];
+  const st = opts.states?.[i] ?? null;
+  const active = opts.interactive && i === input.active && !input.locked[i];
+  const text = a ? noteName(a, lang) : '';
+  const sol = opts.solution?.[i];
+  const label = opts.labels?.[i];
+  const cls = ['note-field', opts.compact ? 'is-compact' : '', active ? 'is-active' : '', st ? `is-${st}` : '', input.locked[i] ? 'is-locked' : '']
+    .filter(Boolean)
+    .join(' ');
+  const aria = `${label ? `Feld ${label}` : `Feld ${i + 1}`}: ${text || 'leer'}`;
+  return `<div class="note-field-wrap">
+      ${label ? `<span class="note-field-label">${esc(label)}</span>` : ''}
+      <button type="button" class="${cls}" data-action="field" data-field="${i}" aria-label="${esc(aria)}"${opts.interactive ? '' : ' disabled'}>${esc(text) || '&nbsp;'}</button>
+      ${sol ? `<span class="note-field-solution">${esc(noteName(sol, lang))}</span>` : ''}
+    </div>`;
+}
+
+export function renderNoteFields(input: NoteInput, lang: Lang, opts: FieldOptions): string {
   return `<div class="note-fields" role="group" aria-label="Antwortfelder">${input.answer
-    .map((a, i) => {
-      const st = opts.states?.[i] ?? null;
-      const active = opts.interactive && i === input.active && !input.locked[i];
-      const text = a ? noteName(a, lang) : '';
-      const sol = opts.solution?.[i];
-      const label = opts.labels?.[i];
-      const cls = ['note-field', active ? 'is-active' : '', st ? `is-${st}` : '', input.locked[i] ? 'is-locked' : '']
-        .filter(Boolean)
-        .join(' ');
-      const aria = `${label ? `Feld ${label}` : `Feld ${i + 1}`}: ${text || 'leer'}`;
-      return `<div class="note-field-wrap">
-          ${label ? `<span class="note-field-label">${esc(label)}</span>` : ''}
-          <button type="button" class="${cls}" data-action="field" data-field="${i}" aria-label="${esc(aria)}"${opts.interactive ? '' : ' disabled'}>${esc(text) || '&nbsp;'}</button>
-          ${sol ? `<span class="note-field-solution">${esc(noteName(sol, lang))}</span>` : ''}
-        </div>`;
-    })
+    .map((_, i) => renderField(input, i, lang, opts))
     .join('')}</div>`;
 }

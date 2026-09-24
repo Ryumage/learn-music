@@ -34,6 +34,8 @@ export interface Result {
   firstCorrect: boolean;
   partsTotal: number;
   partsCorrect: number;
+  /** je Teil richtig im ersten Versuch */
+  firstParts: boolean[];
 }
 
 export interface SessionOptions {
@@ -145,8 +147,9 @@ export class Session {
     const allOk = c.parts.every(Boolean);
     if (c.attempt === 1) {
       this.recordFirst(c, c.parts);
-      if (!allOk && !c.isRetry && c.question.items[0]) {
-        this.retries.push({ key: c.question.items[0], at: this.regularAsked + RETRY_GAP - 1 });
+      const retryKey = this.retryKey(c);
+      if (!allOk && !c.isRetry && retryKey) {
+        this.retries.push({ key: retryKey, at: this.regularAsked + RETRY_GAP - 1 });
       }
     }
     if (allOk) {
@@ -185,6 +188,13 @@ export class Session {
     this.finish(c);
   }
 
+  /** Wiederholt wird das erste falsche Element (bei Notenzeilen die erste falsche Note). */
+  private retryKey(c: Current): string | undefined {
+    const q = c.question;
+    if (q.kind === 'notes' && q.fieldItems) return q.fieldItems[c.parts.findIndex((ok) => !ok)];
+    return q.items[0];
+  }
+
   private recordFirst(c: Current, parts: boolean[]): void {
     c.firstParts = parts;
     c.firstCorrect = parts.every(Boolean);
@@ -215,6 +225,7 @@ export class Session {
       firstCorrect: c.firstCorrect ?? false,
       partsTotal: c.firstParts.length,
       partsCorrect: c.firstParts.filter(Boolean).length,
+      firstParts: c.firstParts,
     });
   }
 }

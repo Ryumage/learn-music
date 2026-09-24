@@ -13,8 +13,21 @@ export interface StaffOptions {
   sp?: number;
   /** Breite einer Notenspalte in sp */
   colWidth?: number;
+  /** Anzahl Spaltenplätze (Breite des Systems), falls größer als columns.length */
+  slots?: number;
+  /** Zustand je Note (Spalte → Note in der gegebenen Reihenfolge) */
+  noteStates?: MarkState[][];
+  /** Antwortfeld je Note; macht die Note antippbar */
+  noteFields?: number[][];
+  /** Platz über der obersten und unter der untersten Linie in sp */
+  above?: number;
+  below?: number;
   label: string;
 }
+
+/** Geometrie für Layouts, die Felder unter die Spalten setzen. */
+export const CLEF_SP = 4;
+export const END_SP = 1;
 
 const ACC_GLYPH: Record<number, string> = { [-2]: '♭♭', [-1]: '♭', 1: '♯', 2: '♯♯' };
 
@@ -37,12 +50,23 @@ function wholeNote(cx: number, cy: number, sp: number): string {
 }
 
 /** Notensystem mit Violinschlüssel (oktaviert) und ganzen Noten. */
-export function renderStaff({ columns, states = [], sp = 10, colWidth = 4, label }: StaffOptions): string {
-  const clefW = 4 * sp;
-  const top = 5.5 * sp;
+export function renderStaff({
+  columns,
+  states = [],
+  sp = 10,
+  colWidth = 4,
+  slots,
+  noteStates,
+  noteFields,
+  above = 5.5,
+  below = 5,
+  label,
+}: StaffOptions): string {
+  const clefW = CLEF_SP * sp;
+  const top = above * sp;
   const bottom = top + 4 * sp;
-  const height = bottom + 5 * sp;
-  const width = clefW + columns.length * colWidth * sp + sp;
+  const height = bottom + below * sp;
+  const width = clefW + Math.max(slots ?? 0, columns.length) * colWidth * sp + END_SP * sp;
   const y = (d: number) => bottom - (d * sp) / 2;
   const parts: string[] = [];
 
@@ -55,7 +79,7 @@ export function renderStaff({ columns, states = [], sp = 10, colWidth = 4, label
   );
 
   columns.forEach((notes, ci) => {
-    const cx = clefW + (ci + 0.6) * colWidth * sp;
+    const cx = clefW + (ci + 0.55) * colWidth * sp;
     const state = states[ci] ?? null;
     const cls = state ? ` st-${state}` : '';
     const steps = notes.map(staffStep);
@@ -68,9 +92,20 @@ export function renderStaff({ columns, states = [], sp = 10, colWidth = 4, label
     let lastAccStep: number | null = null;
     let accShift = 0;
     [...notes]
-      .map((n, i) => ({ n, d: steps[i]! }))
+      .map((n, i) => ({ n, d: steps[i]!, i }))
       .sort((a, b) => b.d - a.d)
-      .forEach(({ n, d }) => {
+      .forEach(({ n, d, i }) => {
+        const ns = noteStates?.[ci]?.[i];
+        const field = noteFields?.[ci]?.[i];
+        const nCls = ns ? ` st-${ns}` : '';
+        const tap =
+          field !== undefined
+            ? ` data-action="field" data-field="${field}"`
+            : '';
+        heads.push(`<g class="st-note${nCls}"${tap}>`);
+        if (field !== undefined) {
+          heads.push(`<rect class="st-hit" x="${cx - 1.4 * sp}" y="${y(d) - 0.5 * sp}" width="${2.8 * sp}" height="${sp}"/>`);
+        }
         heads.push(`<path class="st-head" fill-rule="evenodd" d="${wholeNote(cx, y(d), sp)}"/>`);
         if (n.acc !== 0) {
           // weniger als eine Sexte Abstand zum vorherigen Vorzeichen: eine Spalte weiter links
@@ -81,6 +116,7 @@ export function renderStaff({ columns, states = [], sp = 10, colWidth = 4, label
             `<text class="st-acc" x="${ax}" y="${y(d) + 0.35 * sp}" font-size="${2.2 * sp}" text-anchor="end">${ACC_GLYPH[n.acc]}</text>`,
           );
         }
+        heads.push('</g>');
       });
     parts.push(`<g class="st-col${cls}" data-col="${ci}">${ledger.join('')}${heads.join('')}</g>`);
   });

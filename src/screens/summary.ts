@@ -18,7 +18,17 @@ export function summarize(session: Session, endedAt: number): SummaryData {
   const retries = session.results.filter((r) => r.isRetry);
   const mistakes = regular
     .filter((r) => !r.firstCorrect)
-    .map((r) => ({ label: r.question.prompt, solution: r.question.solution, key: r.question.items[0] ?? '' }));
+    .flatMap((r) => {
+      const q = r.question;
+      // Notenzeilen: jede falsche Note einzeln
+      if (q.kind === 'notes' && q.fieldItems && q.partSolutions) {
+        return q.fieldItems
+          .map((key, i) => ({ key, i }))
+          .filter(({ i }) => !r.firstParts[i])
+          .map(({ key, i }) => ({ label: 'Note im System', solution: q.partSolutions![i]!, key }));
+      }
+      return [{ label: q.prompt, solution: q.solution, key: q.items[0] ?? '' }];
+    });
   return {
     total: regular.length,
     firstCorrect: regular.filter((r) => r.firstCorrect).length,

@@ -1,11 +1,13 @@
 import type { ItemStat } from '../learn/leitner';
 import type { ModuleSettings } from '../learn/store';
 import type { Lang } from '../music/names';
-import type { Spelling } from '../music/notes';
+import type { Note, Spelling } from '../music/notes';
 
 export interface SettingOption {
   value: string;
   label: string;
+  /** Beschriftung im Englisch-Modus (z. B. B statt H) */
+  labelEn?: string;
 }
 
 export interface SettingDef {
@@ -61,6 +63,10 @@ export interface NotesQuestion extends QuestionBase {
   fieldItems?: string[];
   /** Klartext zu einer falschen Eingabe, z. B. „Das war Cis (A-Saite, 4. Bund).“ */
   describe?: (given: Spelling, field: number) => string;
+  /** Lösung je Feld für Rückmeldung und Fehlerliste, z. B. „A · 2. Hilfslinie unten · A-Saite leer“ */
+  partSolutions?: string[];
+  /** Notenzeile (M2): Spalten von links nach rechts, in jeder Spalte die Töne von oben nach unten */
+  staff?: { columns: Note[][]; fields: number[][] };
 }
 
 export interface ChoiceQuestion extends QuestionBase {
@@ -86,6 +92,8 @@ export interface ModuleDef {
   /** erlaubte Elemente bei diesen Einstellungen */
   keys(settings: ModuleSettings): string[];
   make(settings: ModuleSettings, ctx: MakeContext): Question;
+  /** Bündelt erzwungene Elemente zu Fragen (M2: fällige Noten zu Zeilen); Einträge mit Komma getrennt */
+  groupForced?(keys: string[], settings: ModuleSettings): string[];
   /** lesbarer Text für Auswertung und Statistik */
   label(key: string, lang: Lang): string;
 }
