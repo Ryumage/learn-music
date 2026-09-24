@@ -1,6 +1,7 @@
 import type { ItemStat } from '../learn/leitner';
 import type { ModuleSettings } from '../learn/store';
 import type { Lang } from '../music/names';
+import type { Position, StringNo } from '../music/guitar';
 import type { Note, Spelling } from '../music/notes';
 
 export interface SettingOption {
@@ -27,6 +28,8 @@ export interface MakeContext {
   stats: Record<string, ItemStat>;
   now: number;
   rng: () => number;
+  /** Griffbrett-Ansicht für Grafiken, die schon beim Erzeugen gezeichnet werden */
+  fretView?: 'low-bottom' | 'low-top';
 }
 
 interface QuestionBase {
@@ -44,6 +47,8 @@ interface QuestionBase {
   solution: string;
   /** Zusatz nach jeder Antwort, z. B. eine Eselsbrücke (HTML) */
   after?: string;
+  /** Klang zur Frage: Folge von Klängen (klingende MIDI-Werte) */
+  sound?: number[][];
 }
 
 export interface NoteField {
@@ -54,6 +59,10 @@ export interface NoteField {
 
 export interface NotesQuestion extends QuestionBase {
   kind: 'notes';
+  /** Griffbrett mit nummerierten Punkten (M4 „benennen“) */
+  board?: BoardSpec & { points: Position[] };
+  /** Klang je Feld (z. B. zum Antippen einer Note nach dem Prüfen) */
+  fieldSounds?: number[];
   fields: NoteField[];
   /** exact = Schreibweise muss stimmen (Notensystem), pc = nur die Tonklasse */
   compare: 'exact' | 'pc';
@@ -76,10 +85,35 @@ export interface ChoiceQuestion extends QuestionBase {
   describe?: (given: number) => string;
 }
 
-export type Question = NotesQuestion | ChoiceQuestion;
+/** Griffbrett-Ausschnitt einer Tipp-Frage */
+export interface BoardSpec {
+  from: number;
+  to: number;
+  /** antippbare Saiten; die anderen werden abgedunkelt */
+  strings: StringNo[];
+  /** feste Markierungen (z. B. nummerierte Punkte beim Benennen) */
+  labels?: 'numbers' | 'names' | 'none';
+  label: string;
+}
+
+export interface TapQuestion extends QuestionBase {
+  kind: 'tap';
+  board: BoardSpec;
+  /** Mehrfachauswahl („alle Stellen finden“) */
+  multi: boolean;
+  /** richtige Stellen im Fenster */
+  targets: Position[];
+  /** weitere richtige Stellen außerhalb des Fensters, als Text */
+  outside?: string;
+  /** Klartext zur falschen Auswahl */
+  describe?: (selected: Position[]) => string;
+}
+
+export type Question = NotesQuestion | ChoiceQuestion | TapQuestion;
 
 export type NotesAnswer = (Spelling | null)[];
-export type Answer = NotesAnswer | number | null;
+export type TapAnswer = Position[];
+export type Answer = NotesAnswer | TapAnswer | number | null;
 
 export interface ModuleDef {
   id: string;

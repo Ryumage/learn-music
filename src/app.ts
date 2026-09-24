@@ -1,8 +1,10 @@
+import { play, playSequence, setSoundEnabled, unlockAudio } from './audio/pluck';
 import { createInput, pressAccidental, pressBackspace, pressLetter, selectField, type NoteInput } from './input/noteKeyboard';
 import { Session } from './learn/session';
 import { Store, type ModuleSettings } from './learn/store';
 import { findModule } from './modules/catalog';
-import { defaultSettings, type ModuleDef, type NotesAnswer } from './modules/types';
+import { defaultSettings, type ModuleDef, type NotesAnswer, type TapAnswer } from './modules/types';
+import { fretMidi, type StringNo } from './music/guitar';
 import { renderHome } from './screens/home';
 import { renderQuiz } from './screens/quiz';
 import { dueKeys, renderSetup, toggleSetting } from './screens/setup';
@@ -18,8 +20,11 @@ export interface AppOptions {
 
 /** Test-Schnittstelle für E2E: Lösung der aktuellen Frage. */
 export interface QuizProbe {
-  kind: 'notes' | 'choice';
+  kind: 'notes' | 'choice' | 'tap';
   phase: string;
+  /** tap: richtige Stellen; tappable: antippbare Zellen */
+  targets?: { string: number; fret: number }[];
+  multi?: boolean;
   /** notes: Tastenfolge je Feld (Buchstabe 0–6, Vorzeichen); choice: richtige Option */
   fields?: { letter: number; acc: number }[];
   correct?: number;
@@ -34,7 +39,10 @@ export class App {
   private lastModule: ModuleDef | null = null;
 
   constructor(private o: AppOptions) {
+    setSoundEnabled(o.store.settings.sound);
     o.root.addEventListener('click', (e) => this.onClick(e));
+    // iOS startet Audio nur aus einer Nutzeraktion heraus
+    o.root.addEventListener('pointerdown', () => unlockAudio(), { passive: true });
     window.addEventListener('hashchange', () => this.render());
     window.addEventListener('keydown', (e) => this.onKey(e));
     let lastWidth = window.innerWidth;
@@ -45,10 +53,27 @@ export class App {
     });
   }
 
+  /** Telefon quer: breiter als hoch und niedrig (Desktop-Fenster zählen nicht). */
+  private isPhoneLandscape(): boolean {
+    return window.innerWidth > window.innerHeight && window.innerHeight <= 520;
+  }
+
+  /** Telefon hoch: schmal und höher als breit. */
+  private isPhonePortrait(): boolean {
+    return window.innerWidth < 600 && window.innerHeight > window.innerWidth;
+  }
+
   /** Breite für Grafiken: Inhaltsbreite ohne Seitenränder und Rahmen der Grafik. */
   private figureWidth(): number {
-    const content = Math.min(document.documentElement.clientWidth || window.innerWidth, 640);
-    return content - 2 * 16 - 2 * 6 - 2;
+    // Inhaltsbreite der aktuellen Seite messen (berücksichtigt Safe Areas); sonst schätzen
+    const app = this.o.root.querySelector<HTMLElement>('.app');
+    const landscape = this.isPhoneLandscape();
+    if (app && app.closest('.quiz')?.classList.contains('is-landscape') === landscape) {
+      const cs = getComputedStyle(app);
+      return app.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2 * 6 - 2;
+    }
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    return (landscape ? Math.min(vw, 1000) : Math.min(vw, 640)) - 2 * 16 - 2 * 6 - 2;
   }
 
   get store(): Store {
@@ -90,6 +115,11 @@ export class App {
         hints: this.store.settings.hints,
         confirmAbort: this.confirmAbort,
         width: this.figureWidth(),
+        fretView: this.store.settings.fretView,
+        sound: this.store.settings.sound,
+        landscape: this.isPhoneLandscape(),
+        boardHeight: window.innerHeight - 168,
+        portraitPhone: this.isPhonePortrait(),
       });
     } else if (r.name === 'summary') {
       if (!this.session || !this.summary) return this.go('#/');
@@ -133,8 +163,17 @@ export class App {
     const s = this.session;
     if (!s?.current || s.current.phase !== 'answering') return;
     this.syncAnswer();
-    s.check();
+    const phase = s.check();
+    if (phase === 'correct' || phase === 'revealed') this.playQuestion();
     this.render();
+  }
+
+  /** Klang der aktuellen Frage (klingende Tonhöhe). */
+  private playQuestion(): void {
+    const q = this.session?.current?.question;
+    if (!q?.sound?.length || !this.store.settings.sound) return;
+    if (q.sound.length === 1) play(q.sound[0]!);
+    else playSequence(q.sound);
   }
 
   private mainAction(): void {
@@ -175,6 +214,11 @@ export class App {
         if (id === 'lang') this.store.updateSettings({ lang: v === 'en' ? 'en' : 'de' });
         if (id === 'hints') this.store.updateSettings({ hints: v === 'on' });
         if (id === 'dailyGoal') this.store.updateSettings({ dailyGoal: Number(v) });
+        if (id === 'fretView') this.store.updateSettings({ fretView: v === 'low-top' ? 'low-top' : 'low-bottom' });
+        if (id === 'sound') {
+          this.store.updateSettings({ sound: v === 'on' });
+          setSoundEnabled(v === 'on');
+        }
         return this.render();
       }
       case 'start':
@@ -201,10 +245,35 @@ export class App {
         if (!this.input) return;
         this.input = pressBackspace(this.input);
         break;
-      case 'field':
-        if (!this.input) return;
-        this.input = selectField(this.input, Number(el.dataset.field));
+      case 'field': {
+        if (!this.input || !c) return;
+        const i = Number(el.dataset.field);
+        // nach dem Prüfen: Note antippen spielt sie ab
+        if (c.phase !== 'answering') {
+          const m = c.question.kind === 'notes' ? c.question.fieldSounds?.[i] : undefined;
+          if (m !== undefined && this.store.settings.sound) play([m]);
+          return;
+        }
+        this.input = selectField(this.input, i);
         break;
+      }
+      case 'tap': {
+        if (!c || c.question.kind !== 'tap' || c.phase !== 'answering') return;
+        const pos = { string: Number(el.dataset.string) as StringNo, fret: Number(el.dataset.fret) };
+        const sel = (c.answer as TapAnswer) ?? [];
+        const has = sel.some((p) => p.string === pos.string && p.fret === pos.fret);
+        if (c.question.multi) c.answer = has ? sel.filter((p) => !(p.string === pos.string && p.fret === pos.fret)) : [...sel, pos];
+        else c.answer = [pos];
+        if (this.store.settings.sound && !has) play([fretMidi(pos.string, pos.fret)]);
+        return this.render();
+      }
+      case 'listen':
+        return this.playQuestion();
+      case 'sound-test':
+        setSoundEnabled(true);
+        play([40, 45, 50, 55, 59, 64], 0, 0.06);
+        setSoundEnabled(this.store.settings.sound);
+        return;
       case 'choice':
         if (!c || c.phase !== 'answering') return;
         c.answer = Number(el.dataset.choice);
@@ -216,6 +285,7 @@ export class App {
       case 'reveal':
         this.syncAnswer();
         this.session?.reveal();
+        this.playQuestion();
         return this.render();
       case 'next':
         return this.nextQuestion();
@@ -270,7 +340,7 @@ export class App {
       }
       return;
     }
-    if (!this.input) return;
+    if (!this.input || q.kind !== 'notes') return;
     const key = e.key.toLowerCase();
     const lang = this.store.settings.lang;
     const letters: Record<string, number> = { c: 0, d: 1, e: 2, f: 3, g: 4, a: 5, h: 6 };
@@ -291,6 +361,7 @@ export class App {
     if (!c) return null;
     const q = c.question;
     if (q.kind === 'choice') return { kind: 'choice', phase: c.phase, correct: q.correct, options: q.options.length };
+    if (q.kind === 'tap') return { kind: 'tap', phase: c.phase, targets: q.targets.map((t) => ({ ...t })), multi: q.multi };
     return { kind: 'notes', phase: c.phase, fields: q.fields.map((f) => ({ letter: f.answer.letter, acc: f.answer.acc })) };
   }
 }

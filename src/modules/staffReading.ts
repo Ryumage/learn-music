@@ -177,6 +177,8 @@ function buildQuestion(columns: Note[][], lv: Level, lang: Lang): NotesQuestion 
     explain: '<p>Gitarre klingt eine Oktave tiefer als notiert – deshalb die kleine 8 unter dem Violinschlüssel.</p>',
     solution: flat.map((n) => noteName(n, lang)).join(' '),
     hint: hint(lang),
+    sound: columns.map((col) => col.map(soundingMidi)),
+    fieldSounds: flat.map(soundingMidi),
   };
 }
 

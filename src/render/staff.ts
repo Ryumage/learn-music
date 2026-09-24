@@ -58,10 +58,14 @@ export function renderStaff({
   slots,
   noteStates,
   noteFields,
-  above = 5.5,
-  below = 5,
+  above,
+  below,
   label,
 }: StaffOptions): string {
+  // Platz über/unter dem System nach den extremsten Noten (Hilfslinien, Schlüssel mit 8)
+  const allSteps = columns.flat().map(staffStep);
+  if (above === undefined) above = Math.max(2.4, (Math.max(...allSteps, 8) - 8) / 2 + 1.4);
+  if (below === undefined) below = Math.max(3.4, -Math.min(...allSteps, 0) / 2 + 1.2);
   const clefW = CLEF_SP * sp;
   const top = above * sp;
   const bottom = top + 4 * sp;

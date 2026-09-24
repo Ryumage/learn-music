@@ -20,6 +20,13 @@ export function stringName(s: StringNo, lang: Lang): string {
   return `${stringLetter(s, lang)}-Saite`;
 }
 
+/** Nach „der“ (Dativ/Genitiv): „auf der tiefen E-Saite“, „Nummer der hohen E-Saite“. */
+export function stringNameDative(s: StringNo, lang: Lang): string {
+  if (s === 6) return 'tiefen E-Saite';
+  if (s === 1) return 'hohen E-Saite';
+  return stringName(s, lang);
+}
+
 /** Tonklasse der Leersaite. */
 export function openPitchClass(s: StringNo): number {
   return mod(OPEN_MIDI[s], 12);

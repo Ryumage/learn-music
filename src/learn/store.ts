@@ -7,6 +7,10 @@ export interface GlobalSettings {
   hints: boolean;
   /** Tagesziel in Antworten */
   dailyGoal: number;
+  /** Griffbrett: tiefe E-Saite unten (wie Tabs) oder oben (Spieler-Sicht) */
+  fretView: 'low-bottom' | 'low-top';
+  /** Klang nach dem Prüfen und beim Antippen */
+  sound: boolean;
 }
 
 export type ModuleSettings = Record<string, string | string[] | boolean>;
@@ -24,7 +28,7 @@ export interface SaveData {
 
 export const STORAGE_KEY = 'saitenlesen';
 
-export const DEFAULT_SETTINGS: GlobalSettings = { lang: 'de', hints: true, dailyGoal: 20 };
+export const DEFAULT_SETTINGS: GlobalSettings = { lang: 'de', hints: true, dailyGoal: 20, fretView: 'low-bottom', sound: true };
 
 export function emptyData(): SaveData {
   return { v: 1, settings: { ...DEFAULT_SETTINGS }, modules: {}, items: {}, days: {}, best: {} };

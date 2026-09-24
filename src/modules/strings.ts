@@ -1,5 +1,5 @@
 import { pickWeighted } from '../learn/picker';
-import { STRINGS, stringLetter, stringName, type StringNo } from '../music/guitar';
+import { OPEN_MIDI, STRINGS, stringLetter, stringName, stringNameDative, type StringNo } from '../music/guitar';
 import { noteName, type Lang } from '../music/names';
 import { type Note, type Spelling } from '../music/notes';
 import { staffPositionText } from '../music/staff';
@@ -109,7 +109,7 @@ function build(key: string, ctx: MakeContext): Question {
         kind: 'notes',
         prompt: `Wie heißt die ${s}. Saite?`,
         items: [key],
-        figure: renderFretboard({ from: 0, to: 3, labels: 'numbers', highlight: s, lang, label: `Griffbrett, ${s}. Saite markiert` }),
+        figure: renderFretboard({ from: 0, to: 3, view: ctx.fretView, labels: 'numbers', highlight: s, lang, label: `Griffbrett, ${s}. Saite markiert` }),
         fields: [{ answer: spelling(s) }],
         compare: 'pc',
         accidentals: false,
@@ -123,7 +123,7 @@ function build(key: string, ctx: MakeContext): Question {
         kind: 'choice',
         prompt: `Welche Nummer hat die ${name}?`,
         items: [key],
-        figure: renderFretboard({ from: 0, to: 3, labels: 'names', highlight: s, lang, label: `Griffbrett mit Saitennamen, ${name} markiert` }),
+        figure: renderFretboard({ from: 0, to: 3, view: ctx.fretView, labels: 'names', highlight: s, lang, label: `Griffbrett mit Saitennamen, ${name} markiert` }),
         options: [1, 2, 3, 4, 5, 6].map((n) => `${n}. Saite`),
         correct: s - 1,
         describe: (g) => `Das war die ${g + 1}. Saite (${stringName((g + 1) as StringNo, lang)}).`,
@@ -216,7 +216,12 @@ export const stringsModule: ModuleDef = {
     const keys = this.keys(settings);
     const key = ctx.forced ?? pickWeighted(keys, ctx.stats, ctx.now, ctx.recent, ctx.rng);
     const q = build(key, ctx);
-    return { ...q, hint: HINT };
+    const [, kind, arg] = key.split(':');
+    const sound =
+      kind === 'all'
+        ? (arg === 'down' ? [1, 2, 3, 4, 5, 6] : [6, 5, 4, 3, 2, 1]).map((s) => [OPEN_MIDI[s as StringNo]])
+        : [[OPEN_MIDI[Number(arg) as StringNo]]];
+    return { ...q, hint: HINT, sound };
   },
   label(key, lang) {
     const [, kind, arg] = key.split(':') as [string, Kind, string];
@@ -224,7 +229,7 @@ export const stringsModule: ModuleDef = {
     const s = Number(arg) as StringNo;
     return {
       name: `${s}. Saite benennen`,
-      num: `Nummer der ${stringName(s, lang)}`,
+      num: `Nummer der ${stringNameDative(s, lang)}`,
       tab: `Tab-Linie der ${s}. Saite`,
       dia: `Diagramm: ${s}. Saite`,
       staff: `Leersaite im System: ${noteName(OPEN_NOTATED[s], lang)}`,

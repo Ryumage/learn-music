@@ -1,6 +1,6 @@
 import { samePitchClass, sameSpelling } from '../music/notes';
 import type { Lang } from '../music/names';
-import type { Answer, ModuleDef, NotesAnswer, Question } from '../modules/types';
+import type { Answer, ModuleDef, NotesAnswer, Question, TapAnswer } from '../modules/types';
 import type { ModuleSettings, Store } from './store';
 
 /** Wiederholung kommt etwa so viele Fragen später (PLAN 5.2). */
@@ -47,6 +47,7 @@ export interface SessionOptions {
 
 export function isComplete(q: Question, answer: Answer): boolean {
   if (q.kind === 'choice') return typeof answer === 'number';
+  if (q.kind === 'tap') return Array.isArray(answer) && answer.length > 0;
   const a = answer as NotesAnswer | null;
   return !!a && q.fields.every((_, i) => !!a[i]);
 }
@@ -54,6 +55,12 @@ export function isComplete(q: Question, answer: Answer): boolean {
 /** Bewertet jeden Teil einzeln. */
 export function gradeParts(q: Question, answer: Answer): boolean[] {
   if (q.kind === 'choice') return [answer === q.correct];
+  if (q.kind === 'tap') {
+    const sel = (answer as TapAnswer | null) ?? [];
+    const hit = (p: { string: number; fret: number }) => q.targets.some((t) => t.string === p.string && t.fret === p.fret);
+    if (!q.multi) return [sel.length === 1 && hit(sel[0]!)];
+    return [sel.length === q.targets.length && sel.every(hit)];
+  }
   const a = (answer as NotesAnswer | null) ?? [];
   const same = q.compare === 'exact' ? sameSpelling : samePitchClass;
   return q.fields.map((f, i) => {
@@ -63,7 +70,9 @@ export function gradeParts(q: Question, answer: Answer): boolean[] {
 }
 
 export function emptyAnswer(q: Question): Answer {
-  return q.kind === 'choice' ? null : q.fields.map(() => null);
+  if (q.kind === 'choice') return null;
+  if (q.kind === 'tap') return [];
+  return q.fields.map(() => null);
 }
 
 export class Session {
@@ -101,6 +110,7 @@ export class Session {
       stats: this.store.data.items,
       now: this.store.now(),
       rng: this.rng,
+      fretView: this.store.settings.fretView,
     });
   }
 
@@ -174,7 +184,7 @@ export class Session {
       c.answer = a;
       c.locked = c.parts.map(Boolean);
     } else {
-      c.answer = null;
+      c.answer = emptyAnswer(c.question);
     }
     c.phase = 'answering';
   }
@@ -210,6 +220,7 @@ export class Session {
   private describeWrong(c: Current): string {
     const q = c.question;
     if (q.kind === 'choice') return q.describe && typeof c.answer === 'number' ? q.describe(c.answer) : '';
+    if (q.kind === 'tap') return q.describe ? q.describe(c.answer as TapAnswer) : '';
     if (!q.describe) return '';
     const a = c.answer as NotesAnswer;
     return c.parts
