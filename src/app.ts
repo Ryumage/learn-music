@@ -2,14 +2,22 @@ import { play, playSequence, setSoundEnabled, unlockAudio } from './audio/pluck'
 import { createInput, pressAccidental, pressBackspace, pressLetter, selectField, type NoteInput } from './input/noteKeyboard';
 import { Session } from './learn/session';
 import { Store, type ModuleSettings } from './learn/store';
-import { findModule } from './modules/catalog';
+import { heatmapData, weakest } from './learn/stats';
+import { findModule, MODULES } from './modules/catalog';
+import { dailyModule, dailyQuestions, dueCount } from './modules/daily';
 import { defaultSettings, type ModuleDef, type NotesAnswer, type TapAnswer } from './modules/types';
 import { fretMidi, type StringNo } from './music/guitar';
 import { renderHome } from './screens/home';
 import { renderQuiz } from './screens/quiz';
 import { dueKeys, renderSetup, toggleSetting } from './screens/setup';
-import { renderSettings } from './screens/settings';
+import { renderSettings, type DataUi } from './screens/settings';
+import { renderStats } from './screens/stats';
+import { renderHeatmap } from './render/heatmap';
+import { esc } from './util/html';
 import { renderSummary, summarize, type SummaryData } from './screens/summary';
+
+/** umgesetzte Module in Lernweg-Reihenfolge */
+const DEFS: ModuleDef[] = MODULES.flatMap((m) => (m.def ? [m.def] : []));
 
 export interface AppOptions {
   root: HTMLElement;
@@ -37,13 +45,18 @@ export class App {
   private confirmAbort = false;
   private summary: SummaryData | null = null;
   private lastModule: ModuleDef | null = null;
+  private dataUi: DataUi = { exportText: '', importText: '', confirmImport: false, confirmReset: false, message: null };
 
   constructor(private o: AppOptions) {
     setSoundEnabled(o.store.settings.sound);
     o.root.addEventListener('click', (e) => this.onClick(e));
     // iOS startet Audio nur aus einer Nutzeraktion heraus
     o.root.addEventListener('pointerdown', () => unlockAudio(), { passive: true });
-    window.addEventListener('hashchange', () => this.render());
+    window.addEventListener('hashchange', () => {
+      // Meldungen und Rückfragen der Einstellungen gelten nur, solange man dort ist
+      this.dataUi = { ...this.dataUi, confirmImport: false, confirmReset: false, message: null };
+      this.render();
+    });
     window.addEventListener('keydown', (e) => this.onKey(e));
     let lastWidth = window.innerWidth;
     window.addEventListener('resize', () => {
@@ -84,7 +97,7 @@ export class App {
     const h = location.hash.replace(/^#\/?/, '');
     const [name, id] = h.split('/');
     if (name === 'm' && id) return { name: 'setup', id };
-    if (name === 'quiz' || name === 'summary' || name === 'settings') return { name };
+    if (name === 'quiz' || name === 'summary' || name === 'settings' || name === 'stats') return { name };
     return { name: 'home' };
   }
 
@@ -123,13 +136,44 @@ export class App {
       });
     } else if (r.name === 'summary') {
       if (!this.session || !this.summary) return this.go('#/');
-      root.innerHTML = renderSummary(this.summary, this.store.streak());
+      root.innerHTML = renderSummary(this.summary, this.store.streak(), this.summaryExtra(this.session.module));
     } else if (r.name === 'settings') {
-      root.innerHTML = renderSettings(this.store.settings);
+      this.dataUi.exportText = this.store.exportJson();
+      root.innerHTML = renderSettings(this.store.settings, this.dataUi);
+    } else if (r.name === 'stats') {
+      root.innerHTML = renderStats(this.store, DEFS);
     } else {
-      root.innerHTML = renderHome({ showInstallHint: this.o.showInstallHint, baseUrl: this.o.baseUrl, store: this.store });
+      root.innerHTML = renderHome({
+        showInstallHint: this.o.showInstallHint,
+        baseUrl: this.o.baseUrl,
+        store: this.store,
+        due: dueCount(this.store, DEFS),
+      });
     }
     document.documentElement.lang = 'de';
+  }
+
+  /** Modulspezifische Auswertung: Heatmap (M4), schwächste Noten (M2/M3). */
+  private summaryExtra(mod: ModuleDef): string {
+    const lang = this.store.settings.lang;
+    if (mod.id === 'fret') {
+      return `<h2 class="section-title">Griffbrett-Heatmap</h2><div class="card">${renderHeatmap(heatmapData(this.store.data.items), lang, this.store.settings.fretView)}</div>`;
+    }
+    if (mod.id === 'staff' || mod.id === 'read') {
+      const weak = weakest(this.store.data.items, mod.prefixes, 5);
+      if (!weak.length) return '';
+      return `<h2 class="section-title">Schwächste Noten</h2>
+        <ol class="card weak-list" data-testid="weakest">${weak
+          .map((w) => `<li><span class="weak-label">${esc(mod.label(w.key, lang))}</span><span class="weak-num">${w.n - w.c}/${w.n} falsch</span></li>`)
+          .join('')}</ol>`;
+    }
+    return '';
+  }
+
+  private startDaily(): void {
+    const forced = dailyQuestions(this.store, DEFS);
+    if (!forced.length) return this.go('#/');
+    this.start(dailyModule(this.store, DEFS), forced);
   }
 
   private start(mod: ModuleDef, forced?: string[]): void {
@@ -299,11 +343,74 @@ export class App {
         const id = this.session?.module.id;
         this.session = null;
         this.confirmAbort = false;
-        return this.go(id ? `#/m/${id}` : '#/');
+        return this.go(id && id !== 'daily' ? `#/m/${id}` : '#/');
       }
       case 'restart':
+        if (this.lastModule?.id === 'daily') return this.startDaily();
         if (this.lastModule) this.start(this.lastModule);
         return;
+      case 'start-daily':
+        return this.startDaily();
+      case 'export-copy': {
+        const text = this.store.exportJson();
+        const done = (ok: boolean) => {
+          this.dataUi.message = ok
+            ? { ok: true, text: 'Lernstand in die Zwischenablage kopiert.' }
+            : { ok: false, text: 'Kopieren nicht möglich – unter „Lernstand anzeigen“ markieren und kopieren.' };
+          this.render();
+        };
+        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(() => done(true), () => done(false));
+        else done(false);
+        return;
+      }
+      case 'export-file': {
+        const blob = new Blob([this.store.exportJson()], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `saitenlesen-${new Date(this.store.now()).toISOString().slice(0, 10)}.json`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.dataUi.message = { ok: true, text: 'Datei gespeichert.' };
+        return this.render();
+      }
+      case 'import': {
+        const text = this.o.root.querySelector<HTMLTextAreaElement>('[data-testid=import-text]')?.value ?? '';
+        this.dataUi.importText = text;
+        this.dataUi.confirmReset = false;
+        if (!text.trim()) this.dataUi.message = { ok: false, text: 'Bitte zuerst einen gesicherten Lernstand einfügen.' };
+        else this.dataUi.confirmImport = true;
+        return this.render();
+      }
+      case 'import-cancel':
+        this.dataUi.confirmImport = false;
+        return this.render();
+      case 'import-confirm': {
+        const ok = this.store.importJson(this.dataUi.importText);
+        this.dataUi.confirmImport = false;
+        this.dataUi.message = ok
+          ? { ok: true, text: 'Lernstand wiederhergestellt.' }
+          : { ok: false, text: 'Das ist kein gültiger Saitenlesen-Lernstand. Nichts wurde geändert.' };
+        if (ok) {
+          this.dataUi.importText = '';
+          setSoundEnabled(this.store.settings.sound);
+        }
+        return this.render();
+      }
+      case 'reset':
+        this.dataUi.confirmReset = true;
+        this.dataUi.confirmImport = false;
+        return this.render();
+      case 'reset-cancel':
+        this.dataUi.confirmReset = false;
+        return this.render();
+      case 'reset-confirm':
+        this.store.reset();
+        this.dataUi = { exportText: '', importText: '', confirmImport: false, confirmReset: false, message: { ok: true, text: 'Lernstand gelöscht.' } };
+        setSoundEnabled(this.store.settings.sound);
+        return this.render();
       case 'practice-mistakes':
         if (this.lastModule && this.summary) this.start(this.lastModule, this.summary.mistakes.map((m) => m.key));
         return;

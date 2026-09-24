@@ -59,24 +59,37 @@ export function streak(days: Record<string, number>, now: number): number {
   return count;
 }
 
-/** Liest und prüft gespeicherte Daten; Unbekanntes wird verworfen. */
-export function parseData(json: string | null): SaveData {
-  if (!json) return emptyData();
+const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x);
+
+/** Prüft einen Lernstand (z. B. beim Import); null, wenn er nicht passt. */
+export function validateData(json: string | null): SaveData | null {
+  if (!json) return null;
+  let raw: unknown;
   try {
-    const raw = JSON.parse(json) as Partial<SaveData>;
-    if (!raw || raw.v !== 1) return emptyData();
-    const base = emptyData();
-    return {
-      v: 1,
-      settings: { ...base.settings, ...(raw.settings ?? {}) },
-      modules: raw.modules ?? {},
-      items: raw.items ?? {},
-      days: raw.days ?? {},
-      best: raw.best ?? {},
-    };
+    raw = JSON.parse(json);
   } catch {
-    return emptyData();
+    return null;
   }
+  if (!isObject(raw) || raw.v !== 1) return null;
+  const base = emptyData();
+  const obj = (x: unknown) => (isObject(x) ? x : {});
+  const items: Record<string, ItemStat> = {};
+  for (const [k, v] of Object.entries(obj(raw.items))) {
+    if (isObject(v) && typeof v.n === 'number' && typeof v.due === 'number') items[k] = v as unknown as ItemStat;
+  }
+  return {
+    v: 1,
+    settings: { ...base.settings, ...(obj(raw.settings) as Partial<GlobalSettings>) },
+    modules: obj(raw.modules) as Record<string, ModuleSettings>,
+    items,
+    days: obj(raw.days) as Record<string, number>,
+    best: obj(raw.best) as Record<string, number>,
+  };
+}
+
+/** Liest gespeicherte Daten; Unbekanntes oder Kaputtes ergibt einen leeren Lernstand. */
+export function parseData(json: string | null): SaveData {
+  return validateData(json) ?? emptyData();
 }
 
 export class Store {
@@ -156,6 +169,35 @@ export class Store {
       if (isDue(s, now)) due++;
     }
     return { answers, correct, due };
+  }
+
+  /** Lernstand als JSON (Export). */
+  exportJson(): string {
+    return JSON.stringify(this.data, null, 1);
+  }
+
+  /** Ersetzt den Lernstand; false, wenn der Text kein gültiger Lernstand ist. */
+  importJson(text: string): boolean {
+    const data = validateData(text.trim());
+    if (!data) return false;
+    this.data = data;
+    this.save();
+    return true;
+  }
+
+  /** Löscht den gesamten Lernstand samt Einstellungen. */
+  reset(): void {
+    this.data = emptyData();
+    try {
+      this.storage?.removeItem(STORAGE_KEY);
+    } catch {
+      // nichts zu tun
+    }
+  }
+
+  /** Gesamtzahl aller Antworten. */
+  totalAnswers(): number {
+    return Object.values(this.data.days).reduce((a, b) => a + b, 0);
   }
 
   today(): number {

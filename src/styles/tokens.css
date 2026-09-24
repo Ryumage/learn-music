@@ -20,6 +20,7 @@
   --ok-soft: #dcfce7;
   --bad: #b91c1c;
   --bad-soft: #fee2e2;
+  --mid: #d97706;
   --focus: #f59e0b;
 
   --wood: #4a2c1d;
@@ -57,6 +58,7 @@
     --ok-soft: #12311f;
     --bad: #f87171;
     --bad-soft: #3a1618;
+    --mid: #f59e0b;
     --shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 4px 16px rgb(0 0 0 / 25%);
   }
 }
