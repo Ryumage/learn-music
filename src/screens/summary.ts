@@ -64,7 +64,8 @@ function ring(pct: number): string {
     </svg>`;
 }
 
-export function renderSummary(data: SummaryData, streak: number): string {
+/** extra: modulspezifische Abschnitte (Heatmap, schwächste Noten) */
+export function renderSummary(data: SummaryData, streak: number, extra = ''): string {
   const pct = data.total ? Math.round((100 * data.firstCorrect) / data.total) : 0;
   const multi = data.partsTotal > data.total;
   const mistakes = data.mistakes.length
@@ -91,6 +92,7 @@ export function renderSummary(data: SummaryData, streak: number): string {
         <div class="card"><dt>Tage in Folge</dt><dd>${streak}</dd></div>
       </dl>
       ${mistakes}
+      ${extra}
       <div class="actions">
         ${data.mistakes.length ? '<button type="button" class="btn btn-primary" data-action="practice-mistakes">Fehler üben</button>' : ''}
         <button type="button" class="btn${data.mistakes.length ? '' : ' btn-primary'}" data-action="restart">Neue Runde</button>

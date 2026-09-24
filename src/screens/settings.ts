@@ -1,4 +1,5 @@
 import type { GlobalSettings } from '../learn/store';
+import { esc } from '../util/html';
 import { renderFretboard } from '../render/fretboard';
 import { ICONS } from '../render/icons';
 
@@ -11,7 +12,60 @@ function segmented(id: string, options: [string, string][], value: string, label
     .join('')}</div>`;
 }
 
-export function renderSettings(s: GlobalSettings): string {
+export interface DataUi {
+  exportText: string;
+  importText: string;
+  confirmImport: boolean;
+  confirmReset: boolean;
+  message: { ok: boolean; text: string } | null;
+}
+
+function dataSection(ui: DataUi): string {
+  const msg = ui.message
+    ? `<p class="data-msg ${ui.message.ok ? 'is-ok' : 'is-bad'}" role="status" data-testid="data-msg">${esc(ui.message.text)}</p>`
+    : '';
+  const importActions = ui.confirmImport
+    ? `<p class="confirm-line">Aktuellen Lernstand durch den eingefügten ersetzen?</p>
+       <div class="feedback-actions">
+         <button type="button" class="btn" data-action="import-cancel">Abbrechen</button>
+         <button type="button" class="btn btn-danger" data-action="import-confirm">Ersetzen</button>
+       </div>`
+    : `<button type="button" class="btn" data-action="import">Importieren</button>`;
+  const resetActions = ui.confirmReset
+    ? `<p class="confirm-line">Wirklich alles löschen? Antworten, Statistik und Einstellungen gehen verloren.</p>
+       <div class="feedback-actions">
+         <button type="button" class="btn" data-action="reset-cancel">Abbrechen</button>
+         <button type="button" class="btn btn-danger" data-action="reset-confirm">Ja, alles löschen</button>
+       </div>`
+    : `<button type="button" class="btn" data-action="reset">Lernstand löschen</button>`;
+  return `
+    <section class="card settings-card" aria-labelledby="data-title">
+      <h2 id="data-title" class="card-title">Lernstand</h2>
+      <p class="muted small">Alles liegt nur auf diesem Gerät. Safari löscht Website-Daten nach 7 Tagen ohne Besuch – als Home-Bildschirm-App nicht. Sichere den Lernstand trotzdem ab und zu.</p>
+      ${msg}
+      <div class="setting">
+        <h3 class="setting-label">Sichern</h3>
+        <div class="chips">
+          <button type="button" class="btn" data-action="export-copy">Lernstand kopieren</button>
+          <button type="button" class="btn" data-action="export-file">Als Datei sichern</button>
+        </div>
+        <details class="export-details"><summary>Lernstand anzeigen</summary>
+          <textarea class="data-text" readonly data-testid="export-text" aria-label="Lernstand als Text">${esc(ui.exportText)}</textarea>
+        </details>
+      </div>
+      <div class="setting">
+        <h3 class="setting-label">Wiederherstellen</h3>
+        <textarea class="data-text" data-testid="import-text" aria-label="Gesicherten Lernstand einfügen" placeholder="Gesicherten Lernstand hier einfügen">${esc(ui.importText)}</textarea>
+        ${importActions}
+      </div>
+      <div class="setting">
+        <h3 class="setting-label">Löschen</h3>
+        ${resetActions}
+      </div>
+    </section>`;
+}
+
+export function renderSettings(s: GlobalSettings, ui: DataUi): string {
   return `
     <main class="app">
       <header class="topbar">
@@ -47,6 +101,7 @@ export function renderSettings(s: GlobalSettings): string {
           <p class="muted small">Antworten pro Tag</p>
         </div>
       </section>
+      ${dataSection(ui)}
       <section class="card about">
         <h2>Über Saitenlesen</h2>
         <p>Gitarre lesen lernen in kurzen Runden: Noten, Griffbrett, Saiten, Akkorde, Tabs und Rhythmus.

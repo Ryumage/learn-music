@@ -1033,3 +1033,199 @@ a.icon-btn {
 .quiz.is-landscape .key-acc small {
   display: none;
 }
+
+/* Übersicht: Tagesübung */
+.goal-line {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.daily-btn {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.card-title {
+  font-size: 1.1rem;
+}
+
+/* Heatmap: eigener Scroll-Container (einzige erlaubte horizontale Scrollfläche) */
+.heatmap-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.heatmap {
+  border-collapse: separate;
+  border-spacing: 2px;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.heatmap th {
+  color: var(--text-muted);
+  font-weight: 700;
+  min-width: 16px;
+  font-size: 0.72rem;
+}
+
+/* 13 Bünde passen bei 375 px ohne Scrollen */
+.heatmap td {
+  width: 19px;
+  height: 22px;
+  border-radius: 5px;
+}
+
+.hm-ok,
+.hm-swatch.hm-ok {
+  background: var(--ok);
+}
+
+.hm-mid,
+.hm-swatch.hm-mid {
+  background: var(--mid);
+}
+
+.hm-bad,
+.hm-swatch.hm-bad {
+  background: var(--bad);
+}
+
+.hm-none,
+.hm-swatch.hm-none {
+  background: var(--surface-2);
+}
+
+.hm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.hm-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  margin-left: 6px;
+}
+
+
+/* Statistik */
+.table-card {
+  padding: 4px 12px;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table th:first-child {
+  text-align: left;
+}
+
+.stats-table tr:last-child th,
+.stats-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.stats-page .kpis {
+  margin-top: 0;
+}
+
+.weak-list {
+  margin: 0;
+  padding-left: 22px;
+  display: grid;
+  gap: 8px;
+}
+
+.weak-list li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 8px;
+  align-items: center;
+}
+
+.weak-label {
+  min-width: 0;
+}
+
+.weak-num {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.weak-bar {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.weak-bar > span {
+  display: block;
+  height: 100%;
+  width: var(--w);
+  background: var(--bad);
+}
+
+/* Lernstand */
+.data-text {
+  display: block;
+  width: 100%;
+  min-height: 88px;
+  margin: 8px 0;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  resize: vertical;
+}
+
+.export-details summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--accent-strong);
+}
+
+.data-msg {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.data-msg.is-ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.data-msg.is-bad {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.confirm-line {
+  margin: 0 0 6px;
+  font-weight: 700;
+}
