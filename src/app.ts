@@ -58,6 +58,11 @@ export class App {
     return window.innerWidth > window.innerHeight && window.innerHeight <= 520;
   }
 
+  /** Telefon hoch: schmal und höher als breit. */
+  private isPhonePortrait(): boolean {
+    return window.innerWidth < 600 && window.innerHeight > window.innerWidth;
+  }
+
   /** Breite für Grafiken: Inhaltsbreite ohne Seitenränder und Rahmen der Grafik. */
   private figureWidth(): number {
     // Inhaltsbreite der aktuellen Seite messen (berücksichtigt Safe Areas); sonst schätzen
@@ -113,8 +118,8 @@ export class App {
         fretView: this.store.settings.fretView,
         sound: this.store.settings.sound,
         landscape: this.isPhoneLandscape(),
-        boardHeight: window.innerHeight - 190,
-        landscapeHint: this.store.settings.landscapeHint,
+        boardHeight: window.innerHeight - 168,
+        portraitPhone: this.isPhonePortrait(),
       });
     } else if (r.name === 'summary') {
       if (!this.session || !this.summary) return this.go('#/');
@@ -262,9 +267,6 @@ export class App {
         if (this.store.settings.sound && !has) play([fretMidi(pos.string, pos.fret)]);
         return this.render();
       }
-      case 'hide-landscape-hint':
-        this.store.updateSettings({ landscapeHint: false });
-        return this.render();
       case 'listen':
         return this.playQuestion();
       case 'sound-test':

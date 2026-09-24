@@ -25,22 +25,34 @@ export interface QuizView {
   landscape: boolean;
   /** verfügbare Höhe für das Griffbrett in px (Querformat) */
   boardHeight: number;
-  landscapeHint: boolean;
+  /** Telefon im Hochformat: Antipp-Aufgaben verlangen Querformat */
+  portraitPhone: boolean;
 }
 
-const LANDSCAPE_HINT = `<p class="landscape-hint" data-testid="landscape-hint">
-    <span aria-hidden="true">↻</span> Tipp: iPhone quer halten – dann werden die Bünde breiter und leichter zu treffen.
-    <button type="button" class="hint-close" data-action="hide-landscape-hint" aria-label="Hinweis ausblenden">×</button>
-  </p>`;
+const ROTATE_PROMPT = `<section class="rotate-prompt" data-testid="rotate-prompt" role="status">
+    <svg class="rotate-icon" viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="22" y="8" width="20" height="36" rx="4"/>
+      <path d="M12 46a22 22 0 0 0 30 10" fill="none"/>
+      <path d="M38 50l5 6-7 2" fill="none"/>
+    </svg>
+    <h2>Bitte iPhone quer halten</h2>
+    <p>Zum Antippen braucht das Griffbrett die volle Breite – quer werden die Bünde groß genug.</p>
+    <p class="muted small">Dreht sich nichts? Im Kontrollzentrum die Ausrichtungssperre ausschalten.</p>
+  </section>`;
 
-/** Breite der Notensystem-Spalte neben dem Griffbrett im Querformat (px, inkl. Abstand) */
-const SIDE_STAFF = 180;
+/** Breite der Spalte neben dem Griffbrett im Querformat (px, inkl. Abstand) */
+const SIDE_WIDTH = { staff: 180, fields: 132 } as const;
 
-function board(v: QuizView, spec: BoardSpec, markers: FretMarker[], tappable: boolean, beside = false): string {
-  const width = beside ? v.width - SIDE_STAFF : v.width;
+function board(
+  v: QuizView,
+  spec: BoardSpec,
+  markers: FretMarker[],
+  tappable: boolean,
+  beside?: keyof typeof SIDE_WIDTH,
+): string {
+  const width = beside ? v.width - SIDE_WIDTH[beside] : v.width;
   const geometry = v.landscape ? landscapeGeometry(spec.from, spec.to, width, v.boardHeight) : {};
-  const hint = !v.landscape && v.landscapeHint && v.width < 600 ? LANDSCAPE_HINT : '';
-  return `${hint}<div class="figure figure-board">${renderFretboard({
+  return `<div class="figure figure-board">${renderFretboard({
     ...geometry,
     from: spec.from,
     to: spec.to,
@@ -128,7 +140,9 @@ export function renderQuiz(v: QuizView): string {
         text: q.board!.points.length > 1 ? String(i + 1) : '?',
         state: answering ? null : c.parts[i] ? 'ok' : 'bad',
       }));
-      answerArea = board(v, q.board, markers, false) + answerArea;
+      answerArea = v.landscape
+        ? `<div class="quiz-side quiz-side-fields">${board(v, q.board, markers, false, 'fields')}<div>${answerArea}</div></div>`
+        : board(v, q.board, markers, false) + answerArea;
     }
   } else if (q.kind === 'tap') {
     const sel = (c.answer as TapAnswer | null) ?? [];
@@ -140,7 +154,7 @@ export function renderQuiz(v: QuizView): string {
     if (shown) {
       for (const t of q.targets) if (!sel.some((p) => samePosition(p, t))) markers.push({ ...t, state: 'solution' });
     }
-    answerArea = board(v, q.board, markers, answering, v.landscape && !!q.figure);
+    answerArea = board(v, q.board, markers, answering, v.landscape && q.figure ? 'staff' : undefined);
     if (shown && q.outside) answerArea += `<p class="muted small board-outside">${esc(q.outside)}</p>`;
     if (answering) {
       answerArea += `<p class="muted small tap-hint">${q.multi ? `Mehrere Stellen möglich – nochmal tippen hebt die Auswahl auf. Ausgewählt: ${sel.length}` : 'Tippe auf eine Stelle; ein neuer Tipp ersetzt die Auswahl.'}</p>`;
@@ -156,7 +170,14 @@ export function renderQuiz(v: QuizView): string {
     answerArea = renderChoices(q.options, answering ? sel : null, { interactive: answering, states });
   }
 
-  const checkBtn = answering
+  // Antipp-Aufgaben nur im Querformat (Telefon)
+  const needsRotate = q.kind === 'tap' && v.portraitPhone;
+  if (needsRotate) {
+    answerArea = ROTATE_PROMPT;
+    dockInput = '';
+  }
+
+  const checkBtn = answering && !needsRotate
     ? `<button type="button" class="btn btn-primary btn-check" data-action="check" data-testid="check"${isComplete(q, c.answer) ? '' : ' disabled'}>Prüfen</button>`
     : '';
 
@@ -187,7 +208,9 @@ export function renderQuiz(v: QuizView): string {
         ${c.isRetry ? '<p class="retry-badge">Wiederholung</p>' : ''}
         <h1 class="prompt" data-testid="prompt">${esc(q.prompt)}</h1>
         ${
-          v.landscape && q.kind === 'tap' && q.figure
+          needsRotate
+            ? answerArea
+            : v.landscape && q.kind === 'tap' && q.figure
             ? `<div class="quiz-side"><div class="figure">${q.figure}</div><div>${answerArea}</div></div>`
             : `${q.figure ? `<div class="figure">${q.figure}</div>` : ''}${answerArea}`
         }

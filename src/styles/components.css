@@ -927,27 +927,46 @@ a.icon-btn {
   max-height: none;
 }
 
-.landscape-hint {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 0 0 10px;
-  padding: 6px 4px 6px 12px;
-  border-radius: var(--radius-sm);
+.rotate-prompt {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+  gap: 6px;
+  margin: 24px 0;
+  padding: 24px 16px;
+  border-radius: var(--radius);
   background: var(--accent-soft);
   color: var(--accent-strong);
-  font-size: 0.88rem;
 }
 
-.hint-close {
-  margin-left: auto;
-  flex: none;
-  min-width: 44px;
-  min-height: 44px;
-  border: 0;
-  background: transparent;
+.rotate-prompt h2 {
   font-size: 1.3rem;
-  cursor: pointer;
+}
+
+.rotate-prompt p {
+  margin: 0;
+}
+
+.rotate-icon {
+  width: 72px;
+  height: 72px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  animation: rotate-hint 2.4s ease-in-out infinite;
+}
+
+@keyframes rotate-hint {
+  0%,
+  30% {
+    transform: rotate(0deg);
+  }
+  60%,
+  100% {
+    transform: rotate(-90deg);
+  }
 }
 
 .quiz.is-landscape .quiz-side {
@@ -971,5 +990,46 @@ a.icon-btn {
 }
 
 .quiz.is-landscape .tap-hint {
+  display: none;
+}
+
+.quiz.is-landscape .key {
+  min-height: 40px;
+}
+
+.quiz.is-landscape .dock-inner {
+  gap: 6px;
+}
+
+.quiz.is-landscape .quiz-side-fields {
+  grid-template-columns: 1fr 120px;
+}
+
+.quiz.is-landscape .quiz-side-fields .note-fields {
+  flex-direction: column;
+  align-items: center;
+  margin-top: 30px;
+}
+
+/* Querformat: Tastatur und „Prüfen“ in einer Zeile, damit das Griffbrett Platz hat */
+.quiz.is-landscape .dock-inner:has(.keyboard) {
+  grid-template-columns: 1fr minmax(120px, 180px);
+  align-items: end;
+}
+
+.quiz.is-landscape .dock-inner > .feedback {
+  grid-column: 1 / -1;
+}
+
+.quiz.is-landscape .key-hint {
+  display: none;
+}
+
+.quiz.is-landscape .keyboard {
+  grid-template-columns: 7fr 3fr;
+  align-items: end;
+}
+
+.quiz.is-landscape .key-acc small {
   display: none;
 }

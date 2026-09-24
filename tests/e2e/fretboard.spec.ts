@@ -12,6 +12,11 @@ async function startFret(page: Page, task: string, extra: [string, string][] = [
   await expect(page.getByTestId('prompt')).toBeVisible();
 }
 
+// Antipp-Aufgaben laufen auf dem Telefon im Querformat (iPhone 13 quer)
+const LANDSCAPE = { width: 844, height: 390 };
+const PORTRAIT = { width: 390, height: 664 };
+test.use({ viewport: LANDSCAPE });
+
 test.beforeEach(async ({ page }) => {
   await page.goto('./');
   await page.evaluate(() => localStorage.clear());
@@ -139,22 +144,34 @@ test('M3: Runde bis zur Auswertung', async ({ page }) => {
   await expect(page.getByTestId('summary')).toContainText('9 von 10');
 });
 
-test('Hochformat: Hinweis „quer halten“, lässt sich dauerhaft ausblenden', async ({ page }) => {
-  await startModule(page, 'fret');
-  await expect(page.getByTestId('landscape-hint')).toBeVisible();
-  await page.getByRole('button', { name: 'Hinweis ausblenden' }).click();
-  await expect(page.getByTestId('landscape-hint')).toHaveCount(0);
+test('Hochformat: Antipp-Aufgaben verlangen Querformat, nach dem Drehen geht es weiter', async ({ page }) => {
+  await page.setViewportSize(PORTRAIT);
   await startModule(page, 'read');
-  await expect(page.getByTestId('landscape-hint')).toHaveCount(0);
+  await expect(page.getByTestId('rotate-prompt')).toContainText('Bitte iPhone quer halten');
+  await expect(page.locator('[data-action=tap]')).toHaveCount(0);
+  await expect(page.getByTestId('check')).toHaveCount(0);
+  await page.setViewportSize(LANDSCAPE);
+  await expect(page.getByTestId('rotate-prompt')).toHaveCount(0);
+  await answer(page, true);
+  await expect(page.getByTestId('feedback')).toContainText('Richtig!');
+});
+
+test('Hochformat: Aufgaben mit Tastatur (M4 benennen) bleiben nutzbar', async ({ page }) => {
+  await page.setViewportSize(PORTRAIT);
+  await page.goto('./#/m/fret');
+  await page.locator('[data-setting="task"][data-value="name"]').click();
+  await page.getByTestId('start').click();
+  await expect(page.getByTestId('rotate-prompt')).toHaveCount(0);
+  await answer(page, true);
+  await expect(page.getByTestId('feedback')).toContainText('Richtig!');
 });
 
 for (const mod of ['fret', 'read']) {
   test(`Querformat (${mod}): breitere Zellen, ganzes Griffbrett sichtbar, Tippen trifft`, async ({ page }) => {
-    await page.setViewportSize({ width: 844, height: 390 });
     await page.goto(`./#/m/${mod}`);
     if (mod === 'fret') await page.locator('[data-setting="task"][data-value="find"]').click();
     await page.getByTestId('start').click();
-    await expect(page.getByTestId('landscape-hint')).toHaveCount(0);
+    await expect(page.getByTestId('rotate-prompt')).toHaveCount(0);
     const cells = page.locator('[data-action=tap]');
     const first = (await cells.first().boundingBox())!;
     expect(first.width).toBeGreaterThanOrEqual(60);
@@ -169,3 +186,16 @@ for (const mod of ['fret', 'read']) {
     await expect(page.getByTestId('feedback')).toContainText('Richtig!');
   });
 }
+
+test('Querformat: Benennen mit ♯/♭ – Griffbrett, Felder und Tastatur passen auf einen Bildschirm', async ({ page }) => {
+  await page.goto('./#/m/fret');
+  await page.locator('[data-setting="task"][data-value="name"]').click();
+  await page.locator('[data-setting="points"][data-value="2-4"]').click();
+  await page.locator('[data-setting="accidentals"]').click();
+  await page.getByTestId('start').click();
+  const dockTop = (await page.locator('.dock').boundingBox())!.y;
+  const bottoms = await page.locator('.fb-marker, .note-field').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().bottom));
+  expect(Math.max(...bottoms)).toBeLessThanOrEqual(dockTop + 1);
+  await answer(page, true);
+  await expect(page.getByTestId('feedback')).toContainText('Richtig!');
+});
