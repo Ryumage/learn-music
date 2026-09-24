@@ -1415,3 +1415,124 @@ a.icon-btn {
   height: auto;
   margin: 0 auto;
 }
+
+.figure svg.tab {
+  max-width: 420px;
+}
+
+.tab-knock {
+  fill: var(--surface);
+}
+
+.tab-num {
+  fill: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.tab-num.is-mark {
+  fill: var(--on-accent);
+}
+
+.tab-mark {
+  fill: var(--accent);
+}
+
+.tab-circle {
+  fill: var(--surface);
+  stroke: var(--text);
+  stroke-width: 1.3;
+}
+
+.tab-circle.is-mark {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.tab-arc,
+.tab-flag {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.tab-arc-label,
+.tab-above {
+  fill: var(--text);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.tab-above-line {
+  stroke: var(--text);
+  stroke-width: 1.2;
+  stroke-dasharray: 4 3;
+}
+
+.tab-stem {
+  stroke: var(--text);
+  stroke-width: 1.5;
+}
+
+.tab-beam,
+.tab-dot {
+  fill: var(--text);
+}
+
+.tab-text {
+  margin: 0;
+  width: 100%;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.35;
+  color: var(--text);
+}
+
+.strum {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.strum-slot {
+  display: grid;
+  place-items: center;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.strum-slot.is-mark,
+.strum-slot.is-mark .strum-count {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.strum-count {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.count-along b {
+  color: var(--accent-strong);
+}
+
+.timesig {
+  display: grid;
+  justify-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 0.95;
+  color: var(--text);
+}

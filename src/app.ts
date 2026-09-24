@@ -37,6 +37,8 @@ export interface QuizProbe {
   suffix?: string;
   shape?: (number | null)[];
   phase: string;
+  /** Element-Schlüssel der Frage */
+  items: string[];
   /** tap: richtige Stellen; tappable: antippbare Zellen */
   targets?: { string: number; fret: number }[];
   multi?: boolean;
@@ -586,10 +588,10 @@ export class App {
     const c = this.session?.current;
     if (!c) return null;
     const q = c.question;
-    if (q.kind === 'choice') return { kind: 'choice', phase: c.phase, correct: q.correct, options: q.options.length };
-    if (q.kind === 'tap') return { kind: 'tap', phase: c.phase, targets: q.targets.map((t) => ({ ...t })), multi: q.multi };
-    if (q.kind === 'chord') return { kind: 'chord', phase: c.phase, root: { ...q.answer.root }, suffix: q.answer.suffix };
-    if (q.kind === 'shape') return { kind: 'shape', phase: c.phase, shape: [...q.solutionShape] };
-    return { kind: 'notes', phase: c.phase, fields: q.fields.map((f) => ({ letter: f.answer.letter, acc: f.answer.acc })) };
+    if (q.kind === 'choice') return { kind: 'choice', phase: c.phase, items: [...q.items], correct: q.correct, options: q.options.length };
+    if (q.kind === 'tap') return { kind: 'tap', phase: c.phase, items: [...q.items], targets: q.targets.map((t) => ({ ...t })), multi: q.multi };
+    if (q.kind === 'chord') return { kind: 'chord', phase: c.phase, items: [...q.items], root: { ...q.answer.root }, suffix: q.answer.suffix };
+    if (q.kind === 'shape') return { kind: 'shape', phase: c.phase, items: [...q.items], shape: [...q.solutionShape] };
+    return { kind: 'notes', phase: c.phase, items: [...q.items], fields: q.fields.map((f) => ({ letter: f.answer.letter, acc: f.answer.acc })) };
   }
 }
