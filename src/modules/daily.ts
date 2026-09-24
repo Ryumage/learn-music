@@ -11,7 +11,7 @@ function settingsOf(store: Store, mod: ModuleDef): ModuleSettings {
 
 /** Fällige Elemente eines Moduls, im Rahmen seiner aktuellen Einstellungen. */
 export function moduleDue(store: Store, mod: ModuleDef): string[] {
-  return mod.keys(settingsOf(store, mod)).filter((k) => store.isDue(k));
+  return mod.keys(settingsOf(store, mod), store.settings.lang).filter((k) => store.isDue(k));
 }
 
 /** Anzahl fälliger Elemente über alle Module. */

@@ -34,7 +34,7 @@ export function toggleSetting(def: SettingDef, settings: ModuleSettings, value?:
 }
 
 export function dueKeys(mod: ModuleDef, settings: ModuleSettings, store: Store): string[] {
-  return mod.keys(settings).filter((k) => store.isDue(k));
+  return mod.keys(settings, store.settings.lang).filter((k) => store.isDue(k));
 }
 
 export function renderSetup(mod: ModuleDef, settings: ModuleSettings, store: Store, lang: Lang): string {

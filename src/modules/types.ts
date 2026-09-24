@@ -154,8 +154,8 @@ export interface ModuleDef {
   prefixes: string[];
   settings: SettingDef[];
   count(settings: ModuleSettings): number;
-  /** erlaubte Elemente bei diesen Einstellungen */
-  keys(settings: ModuleSettings): string[];
+  /** erlaubte Elemente bei diesen Einstellungen (manche hängen von der Sprache ab, z. B. H/B-Fragen) */
+  keys(settings: ModuleSettings, lang?: Lang): string[];
   make(settings: ModuleSettings, ctx: MakeContext): Question;
   /** Bündelt erzwungene Elemente zu Fragen (M2: fällige Noten zu Zeilen); Einträge mit Komma getrennt */
   groupForced?(keys: string[], settings: ModuleSettings): string[];

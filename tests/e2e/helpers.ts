@@ -6,6 +6,7 @@ export interface Probe {
   suffix?: string;
   shape?: (number | null)[];
   phase: string;
+  items: string[];
   fields?: { letter: number; acc: number }[];
   correct?: number;
   options?: number;
