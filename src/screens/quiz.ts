@@ -3,7 +3,10 @@ import { renderNoteFields, renderNoteKeyboard, type FieldState, type NoteInput }
 import type { Session } from '../learn/session';
 import { isComplete } from '../learn/session';
 import type { Lang } from '../music/names';
+import { renderFretboard, samePosition, type FretMarker, type FretView } from '../render/fretboard';
 import type { MarkState } from '../render/staff';
+import type { BoardSpec, TapAnswer } from '../modules/types';
+import type { Position } from '../music/guitar';
 import { renderStaffRow } from './staffRow';
 import { ICONS } from '../render/icons';
 import { esc } from '../util/html';
@@ -16,6 +19,22 @@ export interface QuizView {
   confirmAbort: boolean;
   /** verfügbare Breite für Grafiken in px */
   width: number;
+  fretView: FretView;
+  sound: boolean;
+}
+
+function board(v: QuizView, spec: BoardSpec, markers: FretMarker[], tappable: boolean): string {
+  return `<div class="figure figure-board">${renderFretboard({
+    from: spec.from,
+    to: spec.to,
+    view: v.fretView,
+    labels: spec.labels ?? 'names',
+    tappable: tappable ? spec.strings : [],
+    active: spec.strings.length > 0 && spec.strings.length < 6 ? spec.strings : undefined,
+    markers,
+    lang: v.lang,
+    label: spec.label,
+  })}</div>`;
 }
 
 function feedback(v: QuizView): string {
@@ -28,7 +47,7 @@ function feedback(v: QuizView): string {
     c.phase === 'wrong'
       ? `<button type="button" class="btn" data-action="retry">Nochmal</button>
          <button type="button" class="btn btn-primary" data-action="reveal">Lösung zeigen</button>`
-      : `<button type="button" class="btn btn-primary" data-action="next" data-testid="next">Weiter</button>`;
+      : `${v.sound && q.sound?.length ? '<button type="button" class="btn" data-action="listen">▶ anhören</button>' : ''}<button type="button" class="btn btn-primary" data-action="next" data-testid="next">Weiter</button>`;
   const wrongCount = c.parts.filter((ok) => !ok).length;
   const partList =
     c.phase === 'revealed' && q.kind === 'notes' && q.partSolutions
@@ -86,6 +105,29 @@ export function renderQuiz(v: QuizView): string {
         })}</div>`
       : renderNoteFields(v.input, v.lang, fieldOpts);
     if (answering) dockInput = renderNoteKeyboard(v.lang, q.accidentals);
+    if (q.board) {
+      const markers: FretMarker[] = q.board.points.map((p, i) => ({
+        ...p,
+        text: q.board!.points.length > 1 ? String(i + 1) : '?',
+        state: answering ? null : c.parts[i] ? 'ok' : 'bad',
+      }));
+      answerArea = board(v, q.board, markers, false) + answerArea;
+    }
+  } else if (q.kind === 'tap') {
+    const sel = (c.answer as TapAnswer | null) ?? [];
+    const isTarget = (p: Position) => q.targets.some((t) => samePosition(t, p));
+    const markers: FretMarker[] = sel.map((p) => ({
+      ...p,
+      state: answering ? 'active' : isTarget(p) ? 'ok' : 'bad',
+    }));
+    if (shown) {
+      for (const t of q.targets) if (!sel.some((p) => samePosition(p, t))) markers.push({ ...t, state: 'solution' });
+    }
+    answerArea = board(v, q.board, markers, answering);
+    if (shown && q.outside) answerArea += `<p class="muted small board-outside">${esc(q.outside)}</p>`;
+    if (answering) {
+      answerArea += `<p class="muted small tap-hint">${q.multi ? `Mehrere Stellen möglich – nochmal tippen hebt die Auswahl auf. Ausgewählt: ${sel.length}` : 'Tippe auf eine Stelle; ein neuer Tipp ersetzt die Auswahl.'}</p>`;
+    }
   } else if (q.kind === 'choice') {
     const sel = typeof c.answer === 'number' ? c.answer : null;
     const states: ChoiceState[] = q.options.map((_, i) => {

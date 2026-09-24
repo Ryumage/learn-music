@@ -78,6 +78,7 @@ describe('M1 Saiten', () => {
 
   it('Labels für die Auswertung', () => {
     expect(stringsModule.label('str:num:3', 'de')).toBe('Nummer der G-Saite');
+    expect(stringsModule.label('str:num:6', 'de')).toBe('Nummer der tiefen E-Saite');
     expect(stringsModule.label('str:all:down', 'de')).toBe('Alle Saiten hoch → tief');
   });
 });

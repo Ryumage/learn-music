@@ -1,4 +1,5 @@
 import type { GlobalSettings } from '../learn/store';
+import { renderFretboard } from '../render/fretboard';
 import { ICONS } from '../render/icons';
 
 function segmented(id: string, options: [string, string][], value: string, label: string): string {
@@ -22,6 +23,18 @@ export function renderSettings(s: GlobalSettings): string {
           <h3 class="setting-label">Notennamen</h3>
           ${segmented('lang', [['de', 'Deutsch (H, Cis, Es)'], ['en', 'Englisch (B, C♯, E♭)']], s.lang, 'Notennamen')}
           <p class="muted small">Akkordsymbole bleiben immer international (Bm, B7) – wie auf Ultimate Guitar.</p>
+        </div>
+        <div class="setting">
+          <h3 class="setting-label">Griffbrett-Ansicht</h3>
+          ${segmented('fretView', [['low-bottom', 'Tiefe E-Saite unten'], ['low-top', 'Tiefe E-Saite oben']], s.fretView, 'Griffbrett-Ansicht')}
+          <p class="muted small">${s.fretView === 'low-bottom' ? 'Wie im Tab und im Cheat Sheet „Standard View“: Sattel links.' : 'Spieler-Sicht wie im Cheat Sheet „Student View“: Sattel rechts.'}</p>
+          <div class="figure figure-preview" data-testid="fret-preview">${renderFretboard({ from: 0, to: 4, view: s.fretView, labels: 'names', lang: s.lang, label: 'Vorschau Griffbrett' })}</div>
+        </div>
+        <div class="setting">
+          <h3 class="setting-label">Ton</h3>
+          ${segmented('sound', [['on', 'an'], ['off', 'aus']], s.sound ? 'on' : 'off', 'Ton')}
+          <button type="button" class="btn btn-small" data-action="sound-test">▶ Probe: alle Leersaiten</button>
+          <p class="muted small">Auf dem iPhone muss der Stummschalter aus sein, sonst bleibt es still.</p>
         </div>
         <div class="setting">
           <h3 class="setting-label">Merkhilfen</h3>

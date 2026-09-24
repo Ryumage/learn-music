@@ -856,3 +856,56 @@ a.icon-btn {
 .hint-table td:first-child {
   font-weight: 700;
 }
+
+/* Griffbrett (M3/M4) */
+.figure-board {
+  padding: 6px;
+}
+
+.figure-board svg.fretboard {
+  max-height: 46dvh;
+}
+
+.fb-cell {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.fb-cell:hover {
+  fill: rgb(255 255 255 / 8%);
+}
+
+.fb-veil {
+  fill: var(--surface);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.fb-string.fb-dim,
+.fb-label.fb-dim {
+  opacity: 0.45;
+}
+
+.fb-marker {
+  pointer-events: none;
+}
+
+.fb-marker.fb-active circle {
+  fill: var(--accent);
+}
+
+.tap-hint,
+.board-outside {
+  text-align: center;
+}
+
+.figure-preview {
+  margin: 10px 0 0;
+}
+
+.btn-small {
+  min-height: 44px;
+  padding: 6px 14px;
+  margin-top: 10px;
+  font-weight: 400;
+}
