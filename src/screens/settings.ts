@@ -28,6 +28,7 @@ export function renderSettings(s: GlobalSettings): string {
           <h3 class="setting-label">Griffbrett-Ansicht</h3>
           ${segmented('fretView', [['low-bottom', 'Tiefe E-Saite unten'], ['low-top', 'Tiefe E-Saite oben']], s.fretView, 'Griffbrett-Ansicht')}
           <p class="muted small">${s.fretView === 'low-bottom' ? 'Wie im Tab und im Cheat Sheet „Standard View“: Sattel links.' : 'Spieler-Sicht wie im Cheat Sheet „Student View“: Sattel rechts.'}</p>
+          <p class="muted small">Tipp für Griffbrett-Aufgaben: iPhone quer halten, dann werden die Bünde breiter.</p>
           <div class="figure figure-preview" data-testid="fret-preview">${renderFretboard({ from: 0, to: 4, view: s.fretView, labels: 'names', lang: s.lang, label: 'Vorschau Griffbrett' })}</div>
         </div>
         <div class="setting">

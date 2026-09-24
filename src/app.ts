@@ -53,10 +53,22 @@ export class App {
     });
   }
 
+  /** Telefon quer: breiter als hoch und niedrig (Desktop-Fenster zählen nicht). */
+  private isPhoneLandscape(): boolean {
+    return window.innerWidth > window.innerHeight && window.innerHeight <= 520;
+  }
+
   /** Breite für Grafiken: Inhaltsbreite ohne Seitenränder und Rahmen der Grafik. */
   private figureWidth(): number {
-    const content = Math.min(document.documentElement.clientWidth || window.innerWidth, 640);
-    return content - 2 * 16 - 2 * 6 - 2;
+    // Inhaltsbreite der aktuellen Seite messen (berücksichtigt Safe Areas); sonst schätzen
+    const app = this.o.root.querySelector<HTMLElement>('.app');
+    const landscape = this.isPhoneLandscape();
+    if (app && app.closest('.quiz')?.classList.contains('is-landscape') === landscape) {
+      const cs = getComputedStyle(app);
+      return app.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - 2 * 6 - 2;
+    }
+    const vw = document.documentElement.clientWidth || window.innerWidth;
+    return (landscape ? Math.min(vw, 1000) : Math.min(vw, 640)) - 2 * 16 - 2 * 6 - 2;
   }
 
   get store(): Store {
@@ -100,6 +112,9 @@ export class App {
         width: this.figureWidth(),
         fretView: this.store.settings.fretView,
         sound: this.store.settings.sound,
+        landscape: this.isPhoneLandscape(),
+        boardHeight: window.innerHeight - 190,
+        landscapeHint: this.store.settings.landscapeHint,
       });
     } else if (r.name === 'summary') {
       if (!this.session || !this.summary) return this.go('#/');
@@ -247,6 +262,9 @@ export class App {
         if (this.store.settings.sound && !has) play([fretMidi(pos.string, pos.fret)]);
         return this.render();
       }
+      case 'hide-landscape-hint':
+        this.store.updateSettings({ landscapeHint: false });
+        return this.render();
       case 'listen':
         return this.playQuestion();
       case 'sound-test':

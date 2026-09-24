@@ -3,7 +3,7 @@ import { renderNoteFields, renderNoteKeyboard, type FieldState, type NoteInput }
 import type { Session } from '../learn/session';
 import { isComplete } from '../learn/session';
 import type { Lang } from '../music/names';
-import { renderFretboard, samePosition, type FretMarker, type FretView } from '../render/fretboard';
+import { landscapeGeometry, renderFretboard, samePosition, type FretMarker, type FretView } from '../render/fretboard';
 import type { MarkState } from '../render/staff';
 import type { BoardSpec, TapAnswer } from '../modules/types';
 import type { Position } from '../music/guitar';
@@ -21,10 +21,27 @@ export interface QuizView {
   width: number;
   fretView: FretView;
   sound: boolean;
+  /** Telefon im Querformat: Griffbrett füllt Breite und Höhe */
+  landscape: boolean;
+  /** verfügbare Höhe für das Griffbrett in px (Querformat) */
+  boardHeight: number;
+  landscapeHint: boolean;
 }
 
-function board(v: QuizView, spec: BoardSpec, markers: FretMarker[], tappable: boolean): string {
-  return `<div class="figure figure-board">${renderFretboard({
+const LANDSCAPE_HINT = `<p class="landscape-hint" data-testid="landscape-hint">
+    <span aria-hidden="true">↻</span> Tipp: iPhone quer halten – dann werden die Bünde breiter und leichter zu treffen.
+    <button type="button" class="hint-close" data-action="hide-landscape-hint" aria-label="Hinweis ausblenden">×</button>
+  </p>`;
+
+/** Breite der Notensystem-Spalte neben dem Griffbrett im Querformat (px, inkl. Abstand) */
+const SIDE_STAFF = 180;
+
+function board(v: QuizView, spec: BoardSpec, markers: FretMarker[], tappable: boolean, beside = false): string {
+  const width = beside ? v.width - SIDE_STAFF : v.width;
+  const geometry = v.landscape ? landscapeGeometry(spec.from, spec.to, width, v.boardHeight) : {};
+  const hint = !v.landscape && v.landscapeHint && v.width < 600 ? LANDSCAPE_HINT : '';
+  return `${hint}<div class="figure figure-board">${renderFretboard({
+    ...geometry,
     from: spec.from,
     to: spec.to,
     view: v.fretView,
@@ -123,7 +140,7 @@ export function renderQuiz(v: QuizView): string {
     if (shown) {
       for (const t of q.targets) if (!sel.some((p) => samePosition(p, t))) markers.push({ ...t, state: 'solution' });
     }
-    answerArea = board(v, q.board, markers, answering);
+    answerArea = board(v, q.board, markers, answering, v.landscape && !!q.figure);
     if (shown && q.outside) answerArea += `<p class="muted small board-outside">${esc(q.outside)}</p>`;
     if (answering) {
       answerArea += `<p class="muted small tap-hint">${q.multi ? `Mehrere Stellen möglich – nochmal tippen hebt die Auswahl auf. Ausgewählt: ${sel.length}` : 'Tippe auf eine Stelle; ein neuer Tipp ersetzt die Auswahl.'}</p>`;
@@ -157,7 +174,7 @@ export function renderQuiz(v: QuizView): string {
     : '';
 
   return `
-    <div class="quiz">
+    <div class="quiz${v.landscape ? ' is-landscape' : ''}">
       <header class="quiz-head">
         <div class="quiz-head-row">
           <button type="button" class="icon-btn" data-action="abort" aria-label="Runde abbrechen">${ICONS.close}</button>
@@ -169,8 +186,11 @@ export function renderQuiz(v: QuizView): string {
       <main class="app quiz-body">
         ${c.isRetry ? '<p class="retry-badge">Wiederholung</p>' : ''}
         <h1 class="prompt" data-testid="prompt">${esc(q.prompt)}</h1>
-        ${q.figure ? `<div class="figure">${q.figure}</div>` : ''}
-        ${answerArea}
+        ${
+          v.landscape && q.kind === 'tap' && q.figure
+            ? `<div class="quiz-side"><div class="figure">${q.figure}</div><div>${answerArea}</div></div>`
+            : `${q.figure ? `<div class="figure">${q.figure}</div>` : ''}${answerArea}`
+        }
         ${v.hints && q.hint ? `<details class="hint"><summary>Merkhilfe</summary>${q.hint}</details>` : ''}
       </main>
       <div class="dock">

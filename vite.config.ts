@@ -17,7 +17,7 @@ export default defineConfig({
         start_url: '/learn-music/',
         scope: '/learn-music/',
         display: 'standalone',
-        orientation: 'portrait',
+        orientation: 'any',
         background_color: '#f4f6fa',
         theme_color: '#1e40af',
         icons: [

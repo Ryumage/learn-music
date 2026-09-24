@@ -909,3 +909,67 @@ a.icon-btn {
   margin-top: 10px;
   font-weight: 400;
 }
+
+/* Querformat (Telefon): Griffbrett füllt die Breite */
+.quiz.is-landscape .app,
+.quiz.is-landscape .quiz-head-row,
+.quiz.is-landscape .quiz-head .bar,
+.quiz.is-landscape .dock-inner {
+  max-width: 1000px;
+}
+
+.quiz.is-landscape .prompt {
+  font-size: 1.1rem;
+  margin: 2px 0 8px;
+}
+
+.quiz.is-landscape .figure-board svg.fretboard {
+  max-height: none;
+}
+
+.landscape-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 6px 4px 6px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.88rem;
+}
+
+.hint-close {
+  margin-left: auto;
+  flex: none;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  font-size: 1.3rem;
+  cursor: pointer;
+}
+
+.quiz.is-landscape .quiz-side {
+  display: grid;
+  grid-template-columns: 168px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.quiz.is-landscape .quiz-side .figure svg.staff {
+  max-width: 150px;
+}
+
+.quiz.is-landscape .quiz-body {
+  padding-top: 6px;
+}
+
+.quiz.is-landscape .dock {
+  padding-top: 6px;
+  padding-bottom: calc(var(--safe-bottom) + 6px);
+}
+
+.quiz.is-landscape .tap-hint {
+  display: none;
+}

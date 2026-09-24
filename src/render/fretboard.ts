@@ -27,11 +27,15 @@ export interface FretboardOptions {
   active?: readonly StringNo[];
   lang: Lang;
   label: string;
+  /** Zellgröße in SVG-Einheiten überschreiben (Querformat: an den Bildschirm angepasst) */
+  cellW?: number;
+  rowH?: number;
 }
 
 /** Geometrie in SVG-Einheiten; bei 375 px Breite ergibt das ≈ 37 × 31 px pro Zelle (8 Bünde). */
-export const CELL_W = 40;
-export const ROW_H = 34;
+export const DEFAULT_CELL_W = 40;
+export const DEFAULT_ROW_H = 34;
+const LABEL_W = 24;
 const OPEN_W = 30;
 const TOP_PAD = 22;
 const INLAYS = [3, 5, 7, 9, 15, 17, 19, 21];
@@ -52,13 +56,16 @@ export function fretWindow(range: readonly [number, number], around: number, rng
 
 /** Griffbrett als SVG mit Tippflächen je Zelle. */
 export function renderFretboard(o: FretboardOptions): string {
+  const CELL_W = o.cellW ?? DEFAULT_CELL_W;
+  const ROW_H = o.rowH ?? DEFAULT_ROW_H;
   const view = o.view ?? 'low-bottom';
   const labels = o.labels ?? 'none';
   const hasOpen = o.from === 0;
   const firstFret = hasOpen ? 1 : o.from;
   const frets = o.to - firstFret + 1;
-  const labelW = labels === 'none' ? 4 : 24;
-  const openW = hasOpen ? OPEN_W : 0;
+  const labelW = labels === 'none' ? 4 : LABEL_W;
+  // Leersaiten-Spalte wächst mit der Zellbreite (Querformat)
+  const openW = hasOpen ? (OPEN_W * CELL_W) / DEFAULT_CELL_W : 0;
   const boardW = frets * CELL_W;
   const width = labelW + openW + boardW + 6;
   const height = TOP_PAD + ROW_H * 6 + 4;
@@ -151,6 +158,18 @@ export function renderFretboard(o: FretboardOptions): string {
   }
 
   return `<svg class="fretboard" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(o.label)}">${p.join('')}</svg>`;
+}
+
+/**
+ * Zellgröße fürs Querformat: das Griffbrett füllt die Breite, die Zeilenhöhe passt in die Höhe.
+ * Maße in px; das SVG wird ohne Skalierung (1 Einheit = 1 px) dargestellt.
+ */
+export function landscapeGeometry(from: number, to: number, width: number, height: number): { cellW: number; rowH: number } {
+  const frets = to - (from === 0 ? 1 : from) + 1;
+  const cells = frets + (from === 0 ? OPEN_W / DEFAULT_CELL_W : 0);
+  const cellW = Math.max(DEFAULT_CELL_W, (width - LABEL_W - 6) / cells);
+  const rowH = Math.max(28, Math.min(cellW * 0.8, (height - TOP_PAD - 4) / 6));
+  return { cellW, rowH };
 }
 
 export function samePosition(a: Position, b: Position): boolean {

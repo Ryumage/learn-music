@@ -138,3 +138,34 @@ test('M3: Runde bis zur Auswertung', async ({ page }) => {
   await finishRound(page);
   await expect(page.getByTestId('summary')).toContainText('9 von 10');
 });
+
+test('Hochformat: Hinweis „quer halten“, lässt sich dauerhaft ausblenden', async ({ page }) => {
+  await startModule(page, 'fret');
+  await expect(page.getByTestId('landscape-hint')).toBeVisible();
+  await page.getByRole('button', { name: 'Hinweis ausblenden' }).click();
+  await expect(page.getByTestId('landscape-hint')).toHaveCount(0);
+  await startModule(page, 'read');
+  await expect(page.getByTestId('landscape-hint')).toHaveCount(0);
+});
+
+for (const mod of ['fret', 'read']) {
+  test(`Querformat (${mod}): breitere Zellen, ganzes Griffbrett sichtbar, Tippen trifft`, async ({ page }) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    await page.goto(`./#/m/${mod}`);
+    if (mod === 'fret') await page.locator('[data-setting="task"][data-value="find"]').click();
+    await page.getByTestId('start').click();
+    await expect(page.getByTestId('landscape-hint')).toHaveCount(0);
+    const cells = page.locator('[data-action=tap]');
+    const first = (await cells.first().boundingBox())!;
+    expect(first.width).toBeGreaterThanOrEqual(60);
+    expect(first.height).toBeGreaterThanOrEqual(26);
+    // alle Zellen oberhalb des Docks
+    const dockTop = (await page.locator('.dock').boundingBox())!.y;
+    const bottoms = await cells.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().bottom));
+    expect(Math.max(...bottoms)).toBeLessThanOrEqual(dockTop + 1);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    await answer(page, true);
+    await expect(page.getByTestId('feedback')).toContainText('Richtig!');
+  });
+}
