@@ -1,6 +1,7 @@
 import { samePitchClass, sameSpelling } from '../music/notes';
 import type { Lang } from '../music/names';
-import type { Answer, ModuleDef, NotesAnswer, Question, TapAnswer } from '../modules/types';
+import type { Answer, ChordAnswer, ModuleDef, NotesAnswer, Question, ShapeAnswer, TapAnswer } from '../modules/types';
+import { pitchClass } from '../music/notes';
 import type { ModuleSettings, Store } from './store';
 
 /** Wiederholung kommt etwa so viele Fragen später (PLAN 5.2). */
@@ -48,6 +49,11 @@ export interface SessionOptions {
 export function isComplete(q: Question, answer: Answer): boolean {
   if (q.kind === 'choice') return typeof answer === 'number';
   if (q.kind === 'tap') return Array.isArray(answer) && answer.length > 0;
+  if (q.kind === 'chord') {
+    const a = answer as ChordAnswer | null;
+    return !!a?.root && a.suffix !== null;
+  }
+  if (q.kind === 'shape') return Array.isArray(answer) && (answer as ShapeAnswer).some((f) => f !== null);
   const a = answer as NotesAnswer | null;
   return !!a && q.fields.every((_, i) => !!a[i]);
 }
@@ -55,6 +61,11 @@ export function isComplete(q: Question, answer: Answer): boolean {
 /** Bewertet jeden Teil einzeln. */
 export function gradeParts(q: Question, answer: Answer): boolean[] {
   if (q.kind === 'choice') return [answer === q.correct];
+  if (q.kind === 'chord') {
+    const a = answer as ChordAnswer | null;
+    return [!!a?.root && pitchClass(a.root) === pitchClass(q.answer.root) && a.suffix === q.answer.suffix];
+  }
+  if (q.kind === 'shape') return [q.grade((answer as ShapeAnswer) ?? [])];
   if (q.kind === 'tap') {
     const sel = (answer as TapAnswer | null) ?? [];
     const hit = (p: { string: number; fret: number }) => q.targets.some((t) => t.string === p.string && t.fret === p.fret);
@@ -63,6 +74,16 @@ export function gradeParts(q: Question, answer: Answer): boolean[] {
   }
   const a = (answer as NotesAnswer | null) ?? [];
   const same = q.compare === 'exact' ? sameSpelling : samePitchClass;
+  if (q.unordered) {
+    // jede Eingabe darf jeden noch nicht vergebenen Ton treffen
+    const left = q.fields.map((f) => f.answer);
+    return a.map((given) => {
+      const i = given ? left.findIndex((t) => same(given, t)) : -1;
+      if (i < 0) return false;
+      left.splice(i, 1);
+      return true;
+    }).concat(Array(Math.max(0, q.fields.length - a.length)).fill(false)).slice(0, q.fields.length);
+  }
   return q.fields.map((f, i) => {
     const given = a[i];
     return !!given && same(given, f.answer);
@@ -72,6 +93,9 @@ export function gradeParts(q: Question, answer: Answer): boolean[] {
 export function emptyAnswer(q: Question): Answer {
   if (q.kind === 'choice') return null;
   if (q.kind === 'tap') return [];
+  if (q.kind === 'chord') return { root: null, suffix: null };
+  // Griff setzen: alle Saiten leer (○)
+  if (q.kind === 'shape') return [0, 0, 0, 0, 0, 0];
   return q.fields.map(() => null);
 }
 
@@ -221,6 +245,8 @@ export class Session {
     const q = c.question;
     if (q.kind === 'choice') return q.describe && typeof c.answer === 'number' ? q.describe(c.answer) : '';
     if (q.kind === 'tap') return q.describe ? q.describe(c.answer as TapAnswer) : '';
+    if (q.kind === 'chord') return q.describe ? q.describe(c.answer as ChordAnswer) : '';
+    if (q.kind === 'shape') return q.describe ? q.describe(c.answer as ShapeAnswer) : '';
     if (!q.describe) return '';
     const a = c.answer as NotesAnswer;
     return c.parts

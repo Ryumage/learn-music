@@ -66,6 +66,11 @@ export function renderHome({ showInstallHint, baseUrl, store, due }: HomeOptions
 
       <h2 class="section-title">Werkzeuge</h2>
       <ul class="module-list">
+        <li><a class="card module is-ready" href="#/changes" data-testid="tool-changes">
+          <span class="badge" aria-hidden="true">W</span>
+          <div class="module-text"><h3>Akkordwechsel</h3><p>60 Sekunden zwischen zwei Akkorden wechseln, Bestwert pro Paar.</p></div>
+          <span class="chev">${ICONS.chevron}</span>
+        </a></li>
         <li><a class="card module is-ready" href="#/stats" data-testid="tool-stats">
           <span class="badge" aria-hidden="true">%</span>
           <div class="module-text"><h3>Statistik</h3><p>Trefferquoten, Griffbrett-Heatmap und Schwachstellen.</p></div>
