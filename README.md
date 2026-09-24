@@ -23,6 +23,7 @@ npm run test:e2e     # E2E (Playwright, WebKit/iPhone 13) gegen den Build
 Die E2E-Tests laufen gegen `vite preview`, also vorher `npm run build`.
 Ist WebKit lokal nicht installiert, geht auch Chromium: `PW_BROWSER=chromium npm run test:e2e`.
 Der Offline-Test läuft immer in Chromium, weil Playwright-WebKit `setOffline()` mit Service Worker nicht unterstützt.
+`tests/e2e/a11y.spec.ts` prüft alle Bildschirme mit axe (WCAG 2.1 AA) im hellen und dunklen Modus.
 
 Hilfsskripte (Python, `pip install fonttools brotli pillow`):
 

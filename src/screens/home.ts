@@ -36,13 +36,15 @@ export function renderHome({ showInstallHint, baseUrl, store, due }: HomeOptions
   const streak = store.streak();
   const progress = Math.min(100, Math.round((100 * today) / goal));
 
-  const installHint = showInstallHint
-    ? `<p class="card install-hint" data-testid="install-hint">
-        <strong>Tipp:</strong> In Safari auf <strong>Teilen → Zum Home-Bildschirm</strong> tippen.
-        Dann startet Saitenlesen ohne Browserleiste, läuft offline und dein Lernstand bleibt erhalten.
-        (Safari löscht Website-Daten sonst nach 7 Tagen ohne Besuch.)
-      </p>`
-    : '';
+  const installHint =
+    showInstallHint && !store.settings.installHintHidden
+      ? `<div class="card install-hint" data-testid="install-hint">
+          <p><strong>Tipp:</strong> In Safari auf <strong>Teilen → Zum Home-Bildschirm</strong> tippen.
+          Dann startet Saitenlesen ohne Browserleiste, läuft offline und dein Lernstand bleibt erhalten.
+          (Safari löscht Website-Daten sonst nach 7 Tagen ohne Besuch.)</p>
+          <button type="button" class="btn btn-small" data-action="install-hint-hide">Ausblenden</button>
+        </div>`
+      : '';
 
   return `
     <main class="app">

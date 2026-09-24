@@ -1536,3 +1536,21 @@ a.icon-btn {
   line-height: 0.95;
   color: var(--text);
 }
+
+.install-steps {
+  margin: 0 0 8px;
+  padding-left: 22px;
+  line-height: 1.5;
+}
+
+.install-hint .btn-small {
+  margin-top: 8px;
+}
+
+.stats-table td {
+  white-space: nowrap;
+}
+
+.install-hint p {
+  margin: 0;
+}

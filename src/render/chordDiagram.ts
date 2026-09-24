@@ -30,7 +30,7 @@ export function renderChordDiagram({ highlight, label, frets = 5 }: ChordDiagram
 }
 
 export interface ChordShapeOptions {
-  /** Griff von der tiefen E- zur hohen e-Saite, null = nicht gespielt */
+  /** Griff von der tiefen E- zur hohen E-Saite, null = nicht gespielt */
   shape: (number | null)[];
   /** Fingersatz wie „x32010“ (Ziffern in den Punkten) */
   fingers?: string | null;

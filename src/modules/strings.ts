@@ -142,7 +142,7 @@ function build(key: string, ctx: MakeContext): Question {
         accidentals: false,
         describe: (given) => stringsWithName(given, lang),
         explain: `<p>Die markierte Linie ist die <b>${s}. Saite (${esc(name)})</b>.</p>
-          <p>Im <b>Tab ist oben die hohe e-Saite</b> – beim Spielen die Saite, die dem Boden am nächsten ist.</p>`,
+          <p>Im <b>Tab ist oben die hohe E-Saite</b> – beim Spielen die Saite, die dem Boden am nächsten ist.</p>`,
         solution: `Tab-Linie ${7 - s} von oben = ${s}. Saite (${letter})`,
         after,
       };
@@ -157,7 +157,7 @@ function build(key: string, ctx: MakeContext): Question {
         accidentals: false,
         describe: (given) => stringsWithName(given, lang),
         explain: `<p>Markiert ist die <b>${s}. Saite (${esc(name)})</b>.</p>
-          <p>Im <b>Akkorddiagramm ist links die tiefe E-Saite</b>, rechts die hohe e-Saite.</p>`,
+          <p>Im <b>Akkorddiagramm ist links die tiefe E-Saite</b>, rechts die hohe E-Saite.</p>`,
         solution: `Diagramm-Linie ${7 - s} von links = ${s}. Saite (${letter})`,
         after,
       };
@@ -185,8 +185,8 @@ function build(key: string, ctx: MakeContext): Question {
   }
 }
 
-const HINT = `<p>Tief → hoch: <b>E A D G H E</b>. Die dünnste Saite ist Nr. 1 (hohe e-Saite), die dickste Nr. 6 (tiefe E-Saite).</p>
-  <p>Im Tab ist oben die hohe e-Saite. Im Akkorddiagramm ist links die tiefe E-Saite.</p>`;
+const HINT = `<p>Tief → hoch: <b>E A D G H E</b>. Die dünnste Saite ist Nr. 1 (hohe E-Saite), die dickste Nr. 6 (tiefe E-Saite).</p>
+  <p>Im Tab ist oben die hohe E-Saite. Im Akkorddiagramm ist links die tiefe E-Saite.</p>`;
 
 export const stringsModule: ModuleDef = {
   id: 'strings',
