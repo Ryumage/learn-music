@@ -150,7 +150,7 @@ function riff(rng: () => number): { frets: number[]; mark: number } {
   return { frets, mark: Math.floor(rng() * n) };
 }
 
-const BASICS_HINT = `<p>Oben im Tab ist die <b>hohe e-Saite</b>, unten die tiefe E-Saite. Die Zahl ist der <b>Bund</b>, 0 = Leersaite.</p>
+const BASICS_HINT = `<p>Oben im Tab ist die <b>hohe E-Saite</b>, unten die tiefe E-Saite. Die Zahl ist der <b>Bund</b>, 0 = Leersaite.</p>
   <p>Senkrechte Striche sind <b>Taktstriche</b>. Übereinander = gleichzeitig.</p>`;
 const TECH_HINT = `<p>h = Hammer-on, p = Pull-off, / \\ = Slide, b = Bending, r = Release, ~ = Vibrato, x = Dead Note, PM = Palm Mute, &lt;12&gt; = Flageolett.</p>
   <p><b>Klammern ( )</b> bedeuten je nach Quelle etwas anderes – meist einen leisen „Geisterton“ oder einen Ton, der vom Bending noch klingt. Nicht überbewerten.</p>`;
@@ -174,7 +174,7 @@ function build(key: string, ctx: MakeContext): Question {
       options: opts,
       correct: s - 1,
       describe: (g) => `Die ${g + 1}. Saite (${stringName((g + 1) as StringNo, lang)}) ist die ${g + 1}. Linie von oben.`,
-      explain: `<p>Die markierte Linie ist die <b>${s}. Saite (${esc(stringName(s, lang))})</b>.</p><p>Im Tab ist <b>oben die hohe e-Saite</b> – die dünnste Saite.</p>`,
+      explain: `<p>Die markierte Linie ist die <b>${s}. Saite (${esc(stringName(s, lang))})</b>.</p><p>Im Tab ist <b>oben die hohe E-Saite</b> – die dünnste Saite.</p>`,
       solution: `Tab-Linie ${s} von oben = ${s}. Saite`,
       hint: BASICS_HINT,
     };
@@ -277,7 +277,7 @@ function build(key: string, ctx: MakeContext): Question {
       figure: renderTab({ columns: [{ notes }], names: true, lang, label: `Tab mit gestapelter Spalte ${def.shape}` }),
       answer: { root: c.root, suffix: c.suffix },
       describe: chordAnswerDescribe(lang),
-      explain: `<p>Von der tiefen E- zur hohen e-Saite gelesen: <b>${esc(def.shape)}</b> – das ist der Griff für ${esc(def.label)}.</p>${chordExplain(def, lang)}`,
+      explain: `<p>Von der tiefen E- zur hohen E-Saite gelesen: <b>${esc(def.shape)}</b> – das ist der Griff für ${esc(def.label)}.</p>${chordExplain(def, lang)}`,
       solution: `${def.shape} = ${def.symbol}`,
       sound: [shapeMidi(shape)],
       hint: `<p>Übereinander stehende Zahlen werden <b>gleichzeitig</b> gespielt. Unten im Tab ist die tiefe E-Saite – lies von unten nach oben wie im Griffbild von links nach rechts.</p>`,
@@ -414,9 +414,9 @@ const KNOW_Q: Record<Know, { prompt: string; correct: string; wrong: string[]; e
   },
   top: {
     prompt: 'Welche Saite ist die oberste Linie im Tab?',
-    correct: 'Die hohe e-Saite (1.)',
+    correct: 'Die hohe E-Saite (1.)',
     wrong: ['Die tiefe E-Saite (6.)', 'Die A-Saite (5.)', 'Die G-Saite (3.)'],
-    explain: 'Die <b>oberste Linie ist die hohe e-Saite</b> – also die dünnste. Beim Spielen ist sie die, die dem Boden am nächsten ist.',
+    explain: 'Die <b>oberste Linie ist die hohe E-Saite</b> – also die dünnste. Beim Spielen ist sie die, die dem Boden am nächsten ist.',
     short: 'Oberste Linie',
     figure: (lang) => renderTab({ highlight: 1, lang, label: 'Tab, oberste Linie markiert' }),
   },

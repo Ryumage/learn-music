@@ -65,7 +65,22 @@ function dataSection(ui: DataUi): string {
     </section>`;
 }
 
-export function renderSettings(s: GlobalSettings, ui: DataUi): string {
+function installSection(installed: boolean): string {
+  const body = installed
+    ? '<p>Saitenlesen läuft als App vom Home-Bildschirm. Es funktioniert offline, Updates kommen beim nächsten Start von selbst.</p>'
+    : `<ol class="install-steps">
+        <li>Diese Seite in <strong>Safari</strong> öffnen.</li>
+        <li>Unten auf <strong>Teilen</strong> tippen (Quadrat mit Pfeil nach oben).</li>
+        <li><strong>Zum Home-Bildschirm</strong> wählen und <strong>Hinzufügen</strong> tippen.</li>
+      </ol>
+      <p class="muted small">Danach startet Saitenlesen ohne Browserleiste, läuft offline und Safari löscht den Lernstand nicht nach 7 Tagen. Updates kommen beim nächsten Start von selbst.</p>`;
+  return `<section class="card settings-card" aria-labelledby="install-title" data-testid="install-section">
+      <h2 id="install-title" class="card-title">Als App auf dem iPhone</h2>
+      ${body}
+    </section>`;
+}
+
+export function renderSettings(s: GlobalSettings, ui: DataUi, installed = false): string {
   return `
     <main class="app">
       <header class="topbar">
@@ -101,6 +116,7 @@ export function renderSettings(s: GlobalSettings, ui: DataUi): string {
           <p class="muted small">Antworten pro Tag</p>
         </div>
       </section>
+      ${installSection(installed)}
       ${dataSection(ui)}
       <section class="card about">
         <h2>Über Saitenlesen</h2>

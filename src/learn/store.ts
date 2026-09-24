@@ -11,6 +11,8 @@ export interface GlobalSettings {
   fretView: 'low-bottom' | 'low-top';
   /** Klang nach dem Prüfen und beim Antippen */
   sound: boolean;
+  /** Installationshinweis auf der Übersicht ausgeblendet */
+  installHintHidden: boolean;
 }
 
 export type ModuleSettings = Record<string, string | string[] | boolean>;
@@ -28,7 +30,7 @@ export interface SaveData {
 
 export const STORAGE_KEY = 'saitenlesen';
 
-export const DEFAULT_SETTINGS: GlobalSettings = { lang: 'de', hints: true, dailyGoal: 20, fretView: 'low-bottom', sound: true };
+export const DEFAULT_SETTINGS: GlobalSettings = { lang: 'de', hints: true, dailyGoal: 20, fretView: 'low-bottom', sound: true, installHintHidden: false };
 
 export function emptyData(): SaveData {
   return { v: 1, settings: { ...DEFAULT_SETTINGS }, modules: {}, items: {}, days: {}, best: {} };

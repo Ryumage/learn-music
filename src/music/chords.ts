@@ -76,7 +76,7 @@ export function chordSpoken(c: ChordSymbol, lang: Lang): string {
   return root + c.suffix;
 }
 
-/** Griff wie „x32010“: von der tiefen E- zur hohen e-Saite, null = nicht gespielt. */
+/** Griff wie „x32010“: von der tiefen E- zur hohen E-Saite, null = nicht gespielt. */
 export type Shape = (number | null)[];
 
 export function parseShape(text: string): Shape {

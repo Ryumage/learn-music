@@ -27,6 +27,8 @@ export interface AppOptions {
   store: Store;
   baseUrl: string;
   showInstallHint: boolean;
+  /** läuft als Home-Bildschirm-App */
+  installed?: boolean;
 }
 
 /** Test-Schnittstelle für E2E: Lösung der aktuellen Frage. */
@@ -153,7 +155,7 @@ export class App {
       root.innerHTML = renderSummary(this.summary, this.store.streak(), this.summaryExtra(this.session.module));
     } else if (r.name === 'settings') {
       this.dataUi.exportText = this.store.exportJson();
-      root.innerHTML = renderSettings(this.store.settings, this.dataUi);
+      root.innerHTML = renderSettings(this.store.settings, this.dataUi, this.o.installed ?? false);
     } else if (r.name === 'changes') {
       const st = this.changesState();
       root.innerHTML = renderChanges(st, this.store.data.best[pairKey(st.a, st.b)] ?? 0, this.store.now(), lang);
@@ -410,6 +412,10 @@ export class App {
       }
       case 'listen':
         return this.playQuestion();
+      case 'install-hint-hide':
+        this.store.settings.installHintHidden = true;
+        this.store.save();
+        return this.render();
       case 'sound-test':
         setSoundEnabled(true);
         play([40, 45, 50, 55, 59, 64], 0, 0.06);
