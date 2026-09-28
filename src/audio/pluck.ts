@@ -93,3 +93,26 @@ export function play(midis: readonly number[], delay = 0, strum = 0.035): void {
 export function playSequence(chords: readonly (readonly number[])[], gap = 0.5): void {
   chords.forEach((ch, i) => play(ch, i * gap));
 }
+
+/** Kurzer Signalton (Einzählen, Start, Ende). */
+export function beep(freq: number, seconds = 0.08, delay = 0): void {
+  if (!enabled) return;
+  const c = context();
+  if (!c) return;
+  unlockAudio();
+  const osc = c.createOscillator();
+  const gain = c.createGain();
+  const t0 = c.currentTime + 0.01 + delay;
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0, t0);
+  gain.gain.linearRampToValueAtTime(0.35, t0 + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + seconds);
+  osc.connect(gain).connect(c.destination);
+  osc.start(t0);
+  osc.stop(t0 + seconds + 0.02);
+}
+
+/** Gemeinsamer AudioContext (z. B. fürs Mikrofon); null, wenn der Browser keinen hat. */
+export function audioContext(): AudioContext | null {
+  return context();
+}

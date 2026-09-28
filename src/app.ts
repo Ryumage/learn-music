@@ -14,10 +14,11 @@ import { renderQuiz } from './screens/quiz';
 import { dueKeys, renderSetup, toggleSetting } from './screens/setup';
 import { renderSettings, type DataUi } from './screens/settings';
 import { renderStats } from './screens/stats';
-import { CHANGES_MS, formatClock, pairKey, renderChanges, type ChangesState } from './screens/changes';
 import { renderHeatmap } from './render/heatmap';
 import { esc } from './util/html';
 import { renderSummary, summarize, type SummaryData } from './screens/summary';
+import { ChangesTrainer } from './changesTrainer';
+import type { CountMode } from './screens/changes';
 
 /** umgesetzte Module in Lernweg-Reihenfolge */
 const DEFS: ModuleDef[] = MODULES.flatMap((m) => (m.def ? [m.def] : []));
@@ -56,9 +57,7 @@ export class App {
   private confirmAbort = false;
   private summary: SummaryData | null = null;
   private lastModule: ModuleDef | null = null;
-  private changes: ChangesState | null = null;
-  private changesTimer: number | undefined;
-  private wakeLock: { release: () => Promise<void> } | null = null;
+  private trainer: ChangesTrainer | null = null;
   private dataUi: DataUi = { exportText: '', importText: '', confirmImport: false, confirmReset: false, message: null };
 
   constructor(private o: AppOptions) {
@@ -68,7 +67,7 @@ export class App {
     o.root.addEventListener('pointerdown', () => unlockAudio(), { passive: true });
     window.addEventListener('hashchange', () => {
       // Trainer verlassen: laufende Runde beenden, ohne zu speichern
-      if (this.changes?.phase === 'running' && this.route().name !== 'changes') this.finishChanges(false);
+      if (this.trainer?.active && this.route().name !== 'changes') this.trainer.abort();
       // Meldungen und Rückfragen der Einstellungen gelten nur, solange man dort ist
       this.dataUi = { ...this.dataUi, confirmImport: false, confirmReset: false, message: null };
       this.render();
@@ -157,8 +156,7 @@ export class App {
       this.dataUi.exportText = this.store.exportJson();
       root.innerHTML = renderSettings(this.store.settings, this.dataUi, this.o.installed ?? false);
     } else if (r.name === 'changes') {
-      const st = this.changesState();
-      root.innerHTML = renderChanges(st, this.store.data.best[pairKey(st.a, st.b)] ?? 0, this.store.now(), lang);
+      root.innerHTML = this.changes().html();
     } else if (r.name === 'stats') {
       root.innerHTML = renderStats(this.store, DEFS);
     } else {
@@ -189,54 +187,10 @@ export class App {
     return '';
   }
 
-  /** Zustand des Akkordwechsel-Trainers; die Auswahl wird gemerkt. */
-  private changesState(): ChangesState {
-    if (!this.changes) {
-      const saved = this.store.data.modules.changes ?? {};
-      this.changes = { a: (saved.a as string) ?? 'A', b: (saved.b as string) ?? 'D', phase: 'setup', endsAt: 0, count: 0, previousBest: 0 };
-    }
-    return this.changes;
-  }
-
-  private startChanges(): void {
-    const st = this.changesState();
-    st.phase = 'running';
-    st.count = 0;
-    st.previousBest = this.store.data.best[pairKey(st.a, st.b)] ?? 0;
-    st.endsAt = this.store.now() + CHANGES_MS;
-    // Bildschirm wach halten; Fehler (z. B. nicht unterstützt) still ignorieren
-    const nav = navigator as Navigator & { wakeLock?: { request: (t: 'screen') => Promise<{ release: () => Promise<void> }> } };
-    nav.wakeLock?.request('screen').then((l) => (this.wakeLock = l), () => {});
-    window.clearInterval(this.changesTimer);
-    this.changesTimer = window.setInterval(() => this.tickChanges(), 200);
-    this.render();
-  }
-
-  private tickChanges(): void {
-    const st = this.changes;
-    if (!st || st.phase !== 'running') return window.clearInterval(this.changesTimer);
-    const left = st.endsAt - this.store.now();
-    if (left <= 0) return this.finishChanges();
-    const el = this.o.root.querySelector('[data-testid=changes-time]');
-    if (el) el.textContent = formatClock(left);
-  }
-
-  private finishChanges(save = true): void {
-    const st = this.changes!;
-    window.clearInterval(this.changesTimer);
-    this.wakeLock?.release().catch(() => {});
-    this.wakeLock = null;
-    if (!save) {
-      st.phase = 'setup';
-      return this.render();
-    }
-    st.phase = 'done';
-    const key = pairKey(st.a, st.b);
-    if (st.count > (this.store.data.best[key] ?? 0)) {
-      this.store.data.best[key] = st.count;
-      this.store.save();
-    }
-    this.render();
+  /** Akkordwechsel-Trainer; die Auswahl wird gemerkt. */
+  private changes(): ChangesTrainer {
+    this.trainer ??= new ChangesTrainer(this.store, this.o.root, () => this.render());
+    return this.trainer;
   }
 
   private startDaily(): void {
@@ -452,30 +406,20 @@ export class App {
         if (this.lastModule?.id === 'daily') return this.startDaily();
         if (this.lastModule) this.start(this.lastModule);
         return;
-      case 'changes-pick': {
-        const st = this.changesState();
-        if (el.dataset.slot === 'a') st.a = el.dataset.id!;
-        else st.b = el.dataset.id!;
-        this.store.data.modules.changes = { a: st.a, b: st.b };
-        this.store.save();
-        return this.render();
-      }
+      case 'changes-pick':
+        return this.changes().pick(el.dataset.slot!, el.dataset.id!);
+      case 'changes-mode':
+        return this.changes().setMode(el.dataset.value as CountMode);
       case 'changes-start':
-        return this.startChanges();
-      case 'changes-tap': {
-        const st = this.changes;
-        if (!st || st.phase !== 'running') return;
-        if (st.endsAt - this.store.now() <= 0) return this.finishChanges();
-        st.count++;
-        const el2 = this.o.root.querySelector('[data-testid=changes-count]');
-        if (el2) el2.textContent = String(st.count);
-        return;
-      }
+        return void this.changes().start();
       case 'changes-stop':
-        return this.finishChanges(false);
+        return this.changes().abort();
+      case 'changes-key':
+        return this.changes().key(el.dataset.key!);
+      case 'changes-save':
+        return this.changes().save();
       case 'changes-setup':
-        this.changesState().phase = 'setup';
-        return this.render();
+        return this.changes().toSetup();
       case 'start-daily':
         return this.startDaily();
       case 'export-copy': {

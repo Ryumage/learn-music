@@ -84,25 +84,104 @@ test('M5 Diagramm → Name: Rückmeldung nennt den getippten Akkord', async ({ p
   await expect(page.getByTestId('feedback')).toContainText(p.suffix === 'm' ? 'Das wäre' : 'Moll');
 });
 
-test('Akkordwechsel: Minute läuft ab, Bestwert pro Paar bleibt gespeichert', async ({ page }) => {
+test('Akkordwechsel: 5 s einzählen, Minute läuft, Zahl eintippen, Bestwert pro Paar', async ({ page }) => {
   await page.clock.install();
   await page.goto('./#/changes');
   await page.locator('[data-action=changes-pick][data-slot="b"][data-id="E"]').click();
   await expect(page.getByTestId('changes-best')).toContainText('–');
   await page.getByTestId('changes-start').click();
-  for (let i = 0; i < 7; i++) await page.getByTestId('changes-tap').click();
-  await expect(page.getByTestId('changes-count')).toHaveText('7');
-  await page.clock.runFor(61_000);
+  // Einzählen
+  await expect(page.getByTestId('changes-countin')).toHaveText('5');
+  await page.clock.runFor(1_000);
+  await expect(page.getByTestId('changes-countin')).toHaveText('4');
+  await page.clock.runFor(4_000);
+  await expect(page.getByTestId('changes-time')).toHaveText('1:00');
+  // kein Tipp-Zähler mehr
+  await expect(page.locator('[data-action=changes-tap]')).toHaveCount(0);
+  await page.clock.runFor(30_000);
+  await expect(page.getByTestId('changes-time')).toHaveText('0:30');
+  await page.clock.runFor(30_000);
+  // Zahl eintippen
+  await expect(page.getByTestId('changes-save')).toBeDisabled();
+  for (const k of ['2', '9', 'del', '7']) await page.locator(`[data-action=changes-key][data-key="${k}"]`).click();
+  await expect(page.getByTestId('changes-entry')).toHaveText('27');
+  await page.getByTestId('changes-save').click();
   await expect(page.getByTestId('changes-result')).toContainText('Erster Bestwert!');
 
   // Auswahl und Bestwert überstehen einen Neustart
   await page.reload();
   await page.goto('./#/changes');
-  await expect(page.getByTestId('changes-best')).toContainText('Bestwert für dieses Paar: 7');
+  await expect(page.getByTestId('changes-best')).toContainText('Bestwert für dieses Paar: 27');
 
   // Schwächere Runde überschreibt den Bestwert nicht
   await page.getByTestId('changes-start').click();
-  await page.getByTestId('changes-tap').click();
-  await page.clock.runFor(61_000);
-  await expect(page.getByTestId('changes-result')).toContainText('Bestwert: 7');
+  await page.clock.runFor(65_500);
+  await page.locator('[data-action=changes-key][data-key="5"]').click();
+  await page.getByTestId('changes-save').click();
+  await expect(page.getByTestId('changes-result')).toContainText('Bestwert: 27');
+});
+
+test('Akkordwechsel: Abbrechen während des Einzählens', async ({ page }) => {
+  await page.clock.install();
+  await page.goto('./#/changes');
+  await page.getByTestId('changes-start').click();
+  await page.clock.runFor(2_000);
+  await page.getByRole('button', { name: 'Abbrechen' }).click();
+  await expect(page.getByTestId('changes-start')).toBeVisible();
+  await page.clock.runFor(70_000);
+  await expect(page.getByTestId('changes-start')).toBeVisible();
+});
+
+test('Akkordwechsel per Mikrofon: ohne Erlaubnis selbst zählen', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: { getUserMedia: () => Promise.reject(new DOMException('nein', 'NotAllowedError')) },
+    });
+  });
+  await page.clock.install();
+  await page.goto('./#/changes');
+  // Init-Skript greift erst beim nächsten echten Laden (beforeEach hat die Seite schon geladen)
+  await page.reload();
+  await page.getByRole('button', { name: 'Mikrofon (Beta)' }).click();
+  await expect(page.getByTestId('changes-mode-text')).toContainText('Das Mikrofon hört mit');
+  await page.getByTestId('changes-start').click();
+  await expect(page.getByTestId('changes-notice')).toContainText('Kein Zugriff aufs Mikrofon');
+  await expect(page.getByTestId('changes-countin')).toBeVisible();
+  await page.clock.runFor(65_500);
+  await expect(page.getByTestId('changes-entry')).toContainText('0');
+  await expect(page.locator('.changes-enter')).toContainText('Wie viele Wechsel');
+  // Zählart bleibt gemerkt
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Mikrofon (Beta)' })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('Akkordwechsel per Mikrofon: Zähler läuft mit, Ergebnis lässt sich korrigieren', async ({ page }) => {
+  // stilles „Mikrofon“ aus dem AudioContext
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      value: {
+        getUserMedia: async () => {
+          const ctx = new AudioContext();
+          return ctx.createMediaStreamDestination().stream;
+        },
+      },
+    });
+  });
+  await page.clock.install();
+  await page.goto('./#/changes');
+  // Init-Skript greift erst beim nächsten echten Laden (beforeEach hat die Seite schon geladen)
+  await page.reload();
+  await page.getByRole('button', { name: 'Mikrofon (Beta)' }).click();
+  await page.getByTestId('changes-start').click();
+  await expect(page.getByTestId('changes-countin')).toBeVisible();
+  await page.clock.runFor(5_000);
+  await expect(page.getByTestId('changes-detected')).toContainText('0 Wechsel erkannt');
+  await page.clock.runFor(60_500);
+  await expect(page.locator('.changes-enter')).toContainText('Das Mikrofon hat 0 Wechsel erkannt');
+  await expect(page.getByTestId('changes-entry')).toHaveText('0');
+  await page.locator('[data-action=changes-key][data-key="3"]').click();
+  await page.locator('[data-action=changes-key][data-key="1"]').click();
+  await expect(page.getByTestId('changes-entry')).toHaveText('31');
+  await page.getByTestId('changes-save').click();
+  await expect(page.getByTestId('changes-result')).toContainText('31');
 });
