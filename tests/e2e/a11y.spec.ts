@@ -44,6 +44,18 @@ for (const scheme of ['light', 'dark'] as const) {
       });
     }
 
+    test('Akkordwechsel: Einzählen, Minute, Eingabe', async ({ page }) => {
+      await page.clock.install();
+      await page.goto('./#/changes');
+      await page.getByTestId('changes-start').click();
+      await check(page, 'changes countin');
+      await page.clock.runFor(6_000);
+      await check(page, 'changes running');
+      await page.clock.runFor(60_000);
+      await page.locator('[data-action=changes-key][data-key="4"]').click();
+      await check(page, 'changes enter');
+    });
+
     test('Griffbrett quer', async ({ page }) => {
       await page.setViewportSize({ width: 844, height: 390 });
       await startModule(page, 'fret');

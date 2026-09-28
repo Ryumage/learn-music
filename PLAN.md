@@ -550,7 +550,10 @@ Hälse zeigen nach unten, die Balken liegen unten, wie in den UG-Screenshots. Di
 
 ### W – Akkordwechsel-Trainer (Werkzeug, kein Quiz)
 - Zwei Akkorde wählen (Grundakkorde, F, Fmaj7, Septakkorde), beide Diagramme anzeigen.
-- Start → 60 s Countdown. Große Tippfläche zählt jeden Wechsel. Bildschirm wach halten (Wake Lock, Fehler still ignorieren).
+- Start → **5 s einzählen** (Signalton je Sekunde, Startton), dann 60 s Countdown mit Endton. Bildschirm wach halten (Wake Lock, Fehler still ignorieren).
+- **Zählen** (Issue #10): Keine Tippfläche während der Minute – zum Tippen bleibt beim Umgreifen keine Hand frei. Stattdessen:
+  - **Selbst zählen** (Standard): im Kopf mitzählen, am Ende die Zahl auf dem eigenen Ziffernblock eintippen.
+  - **Mikrofon (Beta, optional):** Anschläge erkennen, Tonklassen-Profil mit beiden Griffen vergleichen, zwei lernende Gruppen je Akkord → Wechsel. Das Ergebnis wird am Ende vorbelegt und lässt sich korrigieren. Ohne Mikrofon-Erlaubnis: selbst zählen. Nichts wird gespeichert oder verschickt.
 - Ergebnis und **Bestwert pro Paar** speichern. Richtwert: 30 Wechsel/min (JustinGuitar Grade 1).
 - Die gewählten Akkorde werden gemerkt. Dass das fehlt, ist die Hauptkritik an der Original-App „One Minute Changes“.
 
@@ -693,7 +696,7 @@ Hälse zeigen nach unten, die Balken liegen unten, wie in den UG-Screenshots. Di
 | Griffbrett-Ansicht | tiefe E-Saite unten | wie Tabs und Standard-View-Cheat-Sheet |
 | Halbe/Ganze unter dem Tab | eingekreiste Zahl (+ kurzer Hals) | vor MS6 in der UG-App gegenprüfen |
 | UG-Feld „Key“, Tab-Zahlen mit Capo | nur erklären, nicht bewerten | Konvention nicht belegt |
-| Mikrofon-Eingabe („spiel den Ton“) | nicht umsetzen | laut Recherche häufigste Beschwerdequelle; später optional |
+| Mikrofon-Eingabe („spiel den Ton“) | nicht umsetzen | laut Recherche häufigste Beschwerdequelle; später optional. Ausnahme: Akkordwechsel zählen per Mikrofon als abschaltbare Beta (Issue #10) |
 | Einstufungstest beim ersten Start | nicht umsetzen | später, P3 |
 | Muster statt Einzelnoten (Terzen, Dreiklänge, kurze Melodien in C/G-Dur) | Anordnung „Melodie“ als erster Schritt | P3 ausbauen |
 | Hör-Modul („hören und finden“) | später | P3 |

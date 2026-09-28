@@ -1368,26 +1368,78 @@ a.icon-btn {
   height: auto;
 }
 
-.changes-tap {
-  width: 100%;
-  min-height: 42dvh;
-  margin: 0 0 12px;
+.changes-stage {
   display: grid;
   place-items: center;
   align-content: center;
-  gap: 4px;
-  border: 0;
-  border-radius: var(--radius);
-  background: var(--accent);
-  color: var(--on-accent);
-  cursor: pointer;
-  touch-action: manipulation;
-  user-select: none;
-  -webkit-user-select: none;
+  gap: 6px;
+  min-height: 34dvh;
+  margin: 0 0 12px;
+  text-align: center;
 }
 
-.changes-tap:active {
-  filter: brightness(1.1);
+.changes-big {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 5.5rem;
+  line-height: 1;
+  color: var(--accent-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.changes-big-label {
+  margin: 0;
+  max-width: 32ch;
+  color: var(--text-muted);
+}
+
+.changes-live {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.changes-live b {
+  font-size: 1.6rem;
+  color: var(--text);
+}
+
+.changes-notice {
+  border-left: 4px solid var(--bad);
+  margin: 12px 0 0;
+}
+
+.changes-enter {
+  text-align: center;
+}
+
+.changes-enter-title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+}
+
+.changes-entry {
+  margin: 8px auto 12px;
+  min-width: 4ch;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 3.5rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.numpad .key {
+  min-height: 56px;
+  font-size: 1.5rem;
 }
 
 .changes-count {
@@ -1396,12 +1448,6 @@ a.icon-btn {
   font-size: 4rem;
   line-height: 1;
   margin: 0;
-}
-
-.changes-time {
-  font-variant-numeric: tabular-nums;
-  font-size: 1.4rem;
-  font-weight: 700;
 }
 
 .record {
