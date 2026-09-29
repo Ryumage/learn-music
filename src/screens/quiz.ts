@@ -29,6 +29,8 @@ export interface QuizView {
   boardHeight: number;
   /** Telefon im Hochformat: Antipp-Aufgaben verlangen Querformat */
   portraitPhone: boolean;
+  /** Griff-Editor: erster gezeigter Bund */
+  shapeBase: number;
 }
 
 const ROTATE_PROMPT = `<section class="rotate-prompt" data-testid="rotate-prompt" role="status">
@@ -167,17 +169,28 @@ export function renderQuiz(v: QuizView): string {
     const text = chordAnswerText(a, v.lang);
     const st = answering ? '' : c.parts[0] ? ' is-ok' : ' is-bad';
     answerArea = `<div class="chord-answer${st}" data-testid="chord-answer" aria-live="polite">${text ? esc(text) : '<span class="muted">Grundton und Zusatz wählen</span>'}</div>`;
-    if (answering) dockInput = renderChordKeyboard(a, v.lang);
+    if (answering) dockInput = renderChordKeyboard(a, v.lang, q.suffixes);
   } else if (q.kind === 'shape') {
     const shape = (c.answer as ShapeAnswer | null) ?? [0, 0, 0, 0, 0, 0];
     const ok = c.parts[0];
+    const fretted = shape.filter((f): f is number => f !== null && f > 0);
+    const base = answering ? v.shapeBase : fretted.length && Math.max(...fretted) > 5 ? Math.min(...fretted) : 1;
+    const lower = fretted.some((f) => f <= 1) || v.shapeBase <= 1;
+    const position = answering
+      ? `<div class="shape-position" role="group" aria-label="Lage">
+          <button type="button" class="btn btn-small" data-action="cd-base" data-step="-1" aria-label="Griff einen Bund tiefer"${lower ? ' disabled' : ''}>−</button>
+          <span data-testid="shape-base">${v.shapeBase === 1 ? 'erste Lage' : `ab ${v.shapeBase}. Bund`}</span>
+          <button type="button" class="btn btn-small" data-action="cd-base" data-step="1" aria-label="Griff einen Bund höher"${v.shapeBase >= 11 ? ' disabled' : ''}>+</button>
+        </div>`
+      : '';
     answerArea = `<div class="figure figure-chord">${renderChordShape({
       shape,
       editable: answering,
+      baseFret: base,
       names: q.names(shape),
       states: answering ? undefined : shape.map(() => (ok ? 'ok' : 'bad')),
       label: 'Griffdiagramm zum Bearbeiten',
-    })}</div>${answering ? '<p class="muted small tap-hint">Punkt setzen: in die Zelle tippen, nochmal tippen entfernt ihn. Über dem Sattel: ○ leer / × nicht spielen.</p>' : ''}`;
+    })}${position}</div>${answering ? '<p class="muted small tap-hint">Punkt setzen: in die Zelle tippen, nochmal tippen entfernt ihn. Über dem Sattel: ○ leer / × nicht spielen. Mit − und + verschiebst du den Griff auf dem Hals.</p>' : ''}`;
   } else if (q.kind === 'choice') {
     const sel = typeof c.answer === 'number' ? c.answer : null;
     const states: ChoiceState[] = q.options.map((_, i) => {

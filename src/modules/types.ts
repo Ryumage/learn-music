@@ -120,6 +120,8 @@ export interface ChordAnswer {
 export interface ChordQuestion extends QuestionBase {
   kind: 'chord';
   answer: { root: Spelling; suffix: string };
+  /** Zusätze auf der Akkordtastatur (Standard: die klassischen neun) */
+  suffixes?: readonly string[];
   describe?: (given: ChordAnswer) => string;
 }
 

@@ -3,17 +3,14 @@ import type { Lang } from '../music/names';
 import type { ChordAnswer } from '../modules/types';
 import { esc } from '../util/html';
 
-export const SUFFIX_KEYS: { value: ChordSuffix; label: string }[] = [
-  { value: '', label: 'Dur' },
-  { value: 'm', label: 'm' },
-  { value: '7', label: '7' },
-  { value: 'm7', label: 'm7' },
-  { value: 'maj7', label: 'maj7' },
-  { value: 'sus2', label: 'sus2' },
-  { value: 'sus4', label: 'sus4' },
-  { value: 'add9', label: 'add9' },
-  { value: '5', label: '5' },
-];
+/** Die Zusätze der ersten Version – Standardbelegung der Tastatur. */
+export const CLASSIC_SUFFIXES: readonly ChordSuffix[] = ['', 'm', '7', 'm7', 'maj7', 'sus2', 'sus4', 'add9', '5'];
+
+export const SUFFIX_KEYS: { value: ChordSuffix; label: string }[] = CLASSIC_SUFFIXES.map((value) => ({ value, label: suffixLabel(value) }));
+
+export function suffixLabel(s: ChordSuffix): string {
+  return s === '' ? 'Dur' : s;
+}
 
 export function pressRoot(a: ChordAnswer, letter: number): ChordAnswer {
   return { ...a, root: { letter, acc: 0 } };
@@ -39,7 +36,7 @@ export function chordAnswerText(a: ChordAnswer, lang: Lang): string {
 }
 
 /** Akkordtastatur: Grundton C–B (im Deutsch-Modus B mit „= H“), # und b, Zusätze. */
-export function renderChordKeyboard(a: ChordAnswer, lang: Lang): string {
+export function renderChordKeyboard(a: ChordAnswer, lang: Lang, suffixList: readonly string[] = CLASSIC_SUFFIXES): string {
   const roots = ['C', 'D', 'E', 'F', 'G', 'A', 'B']
     .map((l, i) => {
       const on = a.root?.letter === i;
@@ -56,10 +53,12 @@ export function renderChordKeyboard(a: ChordAnswer, lang: Lang): string {
       return `<button type="button" class="key key-acc${on ? ' is-on' : ''}" data-action="chord-acc" data-acc="${acc}" aria-pressed="${on}"${a.root ? '' : ' disabled'}>${label}</button>`;
     })
     .join('');
-  const suffixes = SUFFIX_KEYS.map((s) => {
-    const on = a.suffix === s.value;
-    return `<button type="button" class="key key-suffix${on ? ' is-on' : ''}" data-action="chord-suffix" data-suffix="${esc(s.value)}" aria-pressed="${on}">${esc(s.label)}</button>`;
-  }).join('');
+  const suffixes = suffixList
+    .map((value) => {
+      const on = a.suffix === value;
+      return `<button type="button" class="key key-suffix${on ? ' is-on' : ''}" data-action="chord-suffix" data-suffix="${esc(value)}" aria-pressed="${on}">${esc(suffixLabel(value as ChordSuffix))}</button>`;
+    })
+    .join('');
   return `<div class="keyboard chord-keyboard" role="group" aria-label="Akkordtastatur">
       <div class="key-row key-row-letters">${roots}</div>
       <div class="key-row chord-row-acc">${accs}</div>

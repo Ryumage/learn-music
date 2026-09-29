@@ -28,6 +28,9 @@ for (const scheme of ['light', 'dark'] as const) {
       await check(page, 'changes');
       await page.goto('./#/m/staff');
       await check(page, 'setup');
+      await page.goto('./#/library');
+      await page.locator('[data-action=lib-pick]').first().click();
+      await check(page, 'library');
     });
 
     for (const mod of ['strings', 'staff', 'chords', 'tabs', 'rhythm']) {

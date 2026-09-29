@@ -7,7 +7,7 @@ import { heatmapData, weakest } from './learn/stats';
 import { findModule, MODULES } from './modules/catalog';
 import { dailyModule, dailyQuestions, dueCount } from './modules/daily';
 import { defaultSettings, type ChordAnswer, type ModuleDef, type NotesAnswer, type ShapeAnswer, type TapAnswer } from './modules/types';
-import { shapeMidi } from './music/chords';
+import { parseShape, shapeMidi } from './music/chords';
 import { fretMidi, type StringNo } from './music/guitar';
 import { renderHome } from './screens/home';
 import { renderQuiz } from './screens/quiz';
@@ -19,6 +19,8 @@ import { esc } from './util/html';
 import { renderSummary, summarize, type SummaryData } from './screens/summary';
 import { ChangesTrainer } from './changesTrainer';
 import type { CountMode } from './screens/changes';
+import { newLibraryUi, renderLibrary, type LibraryUi } from './screens/library';
+import { gripById } from './music/chordLibrary';
 
 /** umgesetzte Module in Lernweg-Reihenfolge */
 const DEFS: ModuleDef[] = MODULES.flatMap((m) => (m.def ? [m.def] : []));
@@ -58,6 +60,9 @@ export class App {
   private summary: SummaryData | null = null;
   private lastModule: ModuleDef | null = null;
   private trainer: ChangesTrainer | null = null;
+  private libUi: LibraryUi | null = null;
+  /** Griff-Editor: erster gezeigter Bund, gilt für eine Frage */
+  private shapeBase: { question: unknown; base: number } = { question: null, base: 1 };
   private dataUi: DataUi = { exportText: '', importText: '', confirmImport: false, confirmReset: false, message: null };
 
   constructor(private o: AppOptions) {
@@ -71,6 +76,8 @@ export class App {
       // Meldungen und Rückfragen der Einstellungen gelten nur, solange man dort ist
       this.dataUi = { ...this.dataUi, confirmImport: false, confirmReset: false, message: null };
       this.render();
+      // neue Seite beginnt oben
+      window.scrollTo(0, 0);
     });
     window.addEventListener('keydown', (e) => this.onKey(e));
     let lastWidth = window.innerWidth;
@@ -112,7 +119,7 @@ export class App {
     const h = location.hash.replace(/^#\/?/, '');
     const [name, id] = h.split('/');
     if (name === 'm' && id) return { name: 'setup', id };
-    if (['quiz', 'summary', 'settings', 'stats', 'changes'].includes(name ?? '')) return { name: name! };
+    if (['quiz', 'summary', 'settings', 'stats', 'changes', 'library'].includes(name ?? '')) return { name: name! };
     return { name: 'home' };
   }
 
@@ -148,6 +155,7 @@ export class App {
         landscape: this.isPhoneLandscape(),
         boardHeight: window.innerHeight - 168,
         portraitPhone: this.isPhonePortrait(),
+        shapeBase: this.shapeBaseFor(this.session.current.question),
       });
     } else if (r.name === 'summary') {
       if (!this.session || !this.summary) return this.go('#/');
@@ -157,6 +165,9 @@ export class App {
       root.innerHTML = renderSettings(this.store.settings, this.dataUi, this.o.installed ?? false);
     } else if (r.name === 'changes') {
       root.innerHTML = this.changes().html();
+    } else if (r.name === 'library') {
+      const t = this.changes().state;
+      root.innerHTML = renderLibrary(this.library(), { lang, trainer: { a: t.a, b: t.b } });
     } else if (r.name === 'stats') {
       root.innerHTML = renderStats(this.store, DEFS);
     } else {
@@ -185,6 +196,23 @@ export class App {
           .join('')}</ol>`;
     }
     return '';
+  }
+
+  private shapeBaseFor(question: unknown): number {
+    if (this.shapeBase.question !== question) this.shapeBase = { question, base: 1 };
+    return this.shapeBase.base;
+  }
+
+  /** Auswahl in der Akkord-Bibliothek; Grundton und Typ werden gemerkt. */
+  private library(): LibraryUi {
+    this.libUi ??= newLibraryUi(this.store.data.modules.library ?? {});
+    return this.libUi;
+  }
+
+  private saveLibrary(): void {
+    const ui = this.library();
+    this.store.data.modules.library = { root: String(ui.root), type: ui.type };
+    this.store.save();
   }
 
   /** Akkordwechsel-Trainer; die Auswahl wird gemerkt. */
@@ -364,6 +392,17 @@ export class App {
         }
         return this.render();
       }
+      case 'cd-base': {
+        // Lage wechseln: Fenster und gesetzte Punkte wandern gemeinsam
+        if (!c || c.question.kind !== 'shape' || c.phase !== 'answering') return;
+        const step = Number(el.dataset.step);
+        const base = this.shapeBaseFor(c.question) + step;
+        const shape = [...((c.answer as ShapeAnswer) ?? [0, 0, 0, 0, 0, 0])].map((f) => (f !== null && f > 0 ? f + step : f));
+        if (base < 1 || base > 11 || shape.some((f) => f !== null && f !== 0 && f < 1)) return;
+        this.shapeBase.base = base;
+        c.answer = shape;
+        return this.render();
+      }
       case 'listen':
         return this.playQuestion();
       case 'install-hint-hide':
@@ -406,6 +445,41 @@ export class App {
         if (this.lastModule?.id === 'daily') return this.startDaily();
         if (this.lastModule) this.start(this.lastModule);
         return;
+      case 'lib-root':
+        this.library().root = Number(el.dataset.root);
+        this.library().selected = null;
+        this.saveLibrary();
+        return this.render();
+      case 'lib-type':
+        this.library().type = el.dataset.type!;
+        this.library().selected = null;
+        this.saveLibrary();
+        return this.render();
+      case 'lib-pick': {
+        const ui = this.library();
+        ui.selected = el.dataset.id!;
+        const g = gripById(ui.selected);
+        if (g) play(shapeMidi(parseShape(g.shape)));
+        // Auswahl ohne Neuzeichnen der ganzen Seite markieren (Scrollposition bleibt)
+        return this.render();
+      }
+      case 'lib-play': {
+        const g = gripById(this.library().selected ?? undefined);
+        if (g) play(shapeMidi(parseShape(g.shape)));
+        return;
+      }
+      case 'lib-use': {
+        const id = this.library().selected;
+        if (!id) return;
+        const trainer = this.changes();
+        const slot = el.dataset.slot === 'b' ? 'b' : 'a';
+        const other = slot === 'a' ? 'b' : 'a';
+        // gleicher Griff schon im anderen Feld: tauschen
+        if (trainer.state[other] === id) trainer.state[other] = trainer.state[slot];
+        trainer.state.phase = 'setup';
+        trainer.pick(slot, id);
+        return this.go('#/changes');
+      }
       case 'changes-pick':
         return this.changes().pick(el.dataset.slot!, el.dataset.id!);
       case 'changes-mode':

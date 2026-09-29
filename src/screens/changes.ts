@@ -1,4 +1,5 @@
-import { CHORDS, parseChord, parseShape } from '../music/chords';
+import { CHORDS, gripById, type Grip } from '../music/chordLibrary';
+import { parseChord, parseShape } from '../music/chords';
 import type { Lang } from '../music/names';
 import { chordTitle } from '../modules/chords';
 import { renderChordShape } from '../render/chordDiagram';
@@ -6,7 +7,7 @@ import { ICONS } from '../render/icons';
 import { esc } from '../util/html';
 
 /** Wählbare Akkorde: Grundakkorde, F, Fmaj7, Septakkorde (PLAN W). */
-export const CHANGE_CHORDS = CHORDS.filter((c) => c.set === 'basic' || c.id === 'Fs' || c.id === 'Fmaj7' || c.set === 'seven');
+export const CHANGE_CHORDS = CHORDS.filter((c) => c.sets.includes('basic') || c.id === 'Fs' || c.id === 'Fmaj7' || c.sets.includes('seven'));
 
 /** Dauer einer Runde in ms */
 export const CHANGES_MS = 60_000;
@@ -51,8 +52,9 @@ export interface ChangesState {
 
 export function newChangesState(saved: Record<string, unknown>): ChangesState {
   return {
-    a: (saved.a as string) ?? 'A',
-    b: (saved.b as string) ?? 'D',
+    // gespeicherte Griffe nur übernehmen, wenn es sie (noch) gibt
+    a: gripById(saved.a as string) ? (saved.a as string) : 'A',
+    b: gripById(saved.b as string) ? (saved.b as string) : 'D',
     mode: saved.mode === 'mic' ? 'mic' : 'self',
     phase: 'setup',
     startsAt: 0,
@@ -76,7 +78,9 @@ export function pressKey(entry: string, fresh: boolean, key: string): string {
 }
 
 function chips(slot: 'a' | 'b', selected: string, other: string, lang: Lang): string {
-  return CHANGE_CHORDS.map((c) => {
+  // ein Griff aus der Bibliothek erscheint vorne als eigener Chip
+  const extra: Grip[] = CHANGE_CHORDS.some((c) => c.id === selected) ? [] : [gripById(selected)!];
+  return [...extra, ...CHANGE_CHORDS].map((c) => {
     const on = c.id === selected;
     const disabled = c.id === other;
     const title = lang === 'de' ? chordTitle(parseChord(c.symbol), c.label, 'de') : c.label;
@@ -84,12 +88,12 @@ function chips(slot: 'a' | 'b', selected: string, other: string, lang: Lang): st
   }).join('');
 }
 
-const labelOf = (id: string) => CHORDS.find((x) => x.id === id)!.label;
+const labelOf = (id: string) => gripById(id)!.label;
 
 function diagrams(s: ChangesState): string {
   return `<div class="changes-diagrams">${[s.a, s.b]
     .map((id) => {
-      const c = CHORDS.find((x) => x.id === id)!;
+      const c = gripById(id)!;
       return `<figure class="card changes-diagram"><figcaption>${esc(c.label)}</figcaption>${renderChordShape({ shape: parseShape(c.shape), fingers: c.fingers, label: `Akkorddiagramm ${c.label}` })}</figure>`;
     })
     .join('')}</div>`;
@@ -210,6 +214,7 @@ export function renderChanges(s: ChangesState, v: ChangesView): string {
       <section class="card settings-card">
         <div class="setting"><h3 class="setting-label">Akkord 1</h3><div class="chips" role="group" aria-label="Akkord 1">${chips('a', s.a, s.b, v.lang)}</div></div>
         <div class="setting"><h3 class="setting-label">Akkord 2</h3><div class="chips" role="group" aria-label="Akkord 2">${chips('b', s.b, s.a, v.lang)}</div></div>
+        <p class="small"><a href="#/library" data-testid="changes-library-link">Weitere Akkorde und Griffe in der Akkord-Bibliothek →</a></p>
         <div class="setting"><h3 class="setting-label">Zählen</h3>${modeChips(s.mode)}<p class="muted small" data-testid="changes-mode-text">${esc(modeText)}</p></div>
       </section>
       ${s.notice ? `<p class="card changes-notice" role="alert" data-testid="changes-notice">${esc(s.notice)}</p>` : ''}

@@ -2,8 +2,25 @@ import { noteName, type Lang } from './names';
 import { LETTERS, LETTER_STEPS, mod, pitchClass, type Spelling } from './notes';
 import { OPEN_MIDI, type StringNo } from './guitar';
 
-export type ChordSuffix = '' | 'm' | '7' | 'm7' | 'maj7' | 'sus2' | 'sus4' | 'add9' | '5';
-export const SUFFIXES: readonly ChordSuffix[] = ['', 'm', '7', 'm7', 'maj7', 'sus2', 'sus4', 'add9', '5'];
+export type ChordSuffix =
+  | ''
+  | 'm'
+  | '7'
+  | 'm7'
+  | 'maj7'
+  | '6'
+  | 'm6'
+  | '9'
+  | 'sus2'
+  | 'sus4'
+  | '7sus4'
+  | 'add9'
+  | 'dim'
+  | 'dim7'
+  | 'aug'
+  | 'm7b5'
+  | '5';
+export const SUFFIXES: readonly ChordSuffix[] = ['', 'm', '7', 'm7', 'maj7', '6', 'm6', '9', 'sus2', 'sus4', '7sus4', 'add9', 'dim', 'dim7', 'aug', 'm7b5', '5'];
 
 /** Akkordformeln: [Halbtöne über dem Grundton, Stufe] (PLAN 4.6). */
 export const FORMULAS: Record<ChordSuffix, readonly (readonly [number, number])[]> = {
@@ -16,9 +33,18 @@ export const FORMULAS: Record<ChordSuffix, readonly (readonly [number, number])[
   sus4: [[0, 1], [5, 4], [7, 5]],
   add9: [[0, 1], [4, 3], [7, 5], [14, 9]],
   '5': [[0, 1], [7, 5]],
+  '6': [[0, 1], [4, 3], [7, 5], [9, 6]],
+  m6: [[0, 1], [3, 3], [7, 5], [9, 6]],
+  '9': [[0, 1], [4, 3], [7, 5], [10, 7], [14, 9]],
+  '7sus4': [[0, 1], [5, 4], [7, 5], [10, 7]],
+  dim: [[0, 1], [3, 3], [6, 5]],
+  dim7: [[0, 1], [3, 3], [6, 5], [9, 7]],
+  aug: [[0, 1], [4, 3], [8, 5]],
+  m7b5: [[0, 1], [3, 3], [6, 5], [10, 7]],
 };
 
-const SEVENTHS: ReadonlySet<ChordSuffix> = new Set(['7', 'm7', 'maj7']);
+/** Akkorde mit vier oder mehr Tönen: die (reine) Quinte darf im Griff fehlen. */
+const FIFTH_OPTIONAL: ReadonlySet<ChordSuffix> = new Set(['7', 'm7', 'maj7', '6', 'm6', '9', '7sus4']);
 
 export function formulaText(suffix: ChordSuffix): string {
   return {
@@ -31,6 +57,14 @@ export function formulaText(suffix: ChordSuffix): string {
     sus4: 'sus4: Grundton, Quarte, Quinte (keine Terz)',
     add9: 'add9: Dur-Dreiklang plus None',
     '5': 'Powerchord: Grundton und Quinte',
+    '6': 'Sextakkord: Dur-Dreiklang plus große Sexte',
+    m6: 'Moll-Sextakkord: Moll-Dreiklang plus große Sexte',
+    '9': 'Nonenakkord: Dominantseptakkord plus None',
+    '7sus4': '7sus4: sus4-Akkord plus kleine Septime',
+    dim: 'Verminderter Dreiklang: Grundton, kleine Terz, verminderte Quinte',
+    dim7: 'Verminderter Septakkord: verminderter Dreiklang plus verminderte Septime',
+    aug: 'Übermäßiger Dreiklang: Grundton, große Terz, übermäßige Quinte',
+    m7b5: 'Halbverminderter Septakkord: verminderter Dreiklang plus kleine Septime',
   }[suffix];
 }
 
@@ -79,8 +113,16 @@ export function chordSpoken(c: ChordSymbol, lang: Lang): string {
 /** Griff wie „x32010“: von der tiefen E- zur hohen E-Saite, null = nicht gespielt. */
 export type Shape = (number | null)[];
 
+/** Liest „x32010“ oder – ab Bund 10 – mit Bindestrichen „x-10-12-12-12-10“. */
 export function parseShape(text: string): Shape {
-  return [...text].map((ch) => (ch === 'x' ? null : Number(ch)));
+  const parts = text.includes('-') ? text.split('-') : [...text];
+  return parts.map((ch) => (ch === 'x' ? null : Number(ch)));
+}
+
+/** Gegenstück zu parseShape: kurz, solange alle Bünde einstellig sind. */
+export function shapeText(shape: Shape): string {
+  const parts = shape.map((f) => (f === null ? 'x' : String(f)));
+  return parts.every((p) => p.length === 1) ? parts.join('') : parts.join('-');
 }
 
 /** Saitennummer zur Position im Griff (Index 0 = 6. Saite). */
@@ -110,63 +152,19 @@ export interface ShapeCheck {
 
 /**
  * Prüft einen Griff über Tonklassen: alle Akkordtöne vorhanden, keine fremden.
- * Bei Septakkorden darf die Quinte fehlen.
+ * Bei Akkorden mit vier oder mehr Tönen (Sept-, Sext-, Nonenakkorde) darf die reine Quinte fehlen.
  */
 export function checkShape(shape: Shape, c: ChordSymbol): ShapeCheck {
   const played = shapePitchClasses(shape);
   const rootPc = pitchClass(c.root);
   const fifth = mod(rootPc + 7, 12);
   const wanted = chordPitchClasses(c);
-  const missing = wanted.filter((pc) => !played.includes(pc) && !(SEVENTHS.has(c.suffix) && pc === fifth));
+  const missing = wanted.filter((pc) => !played.includes(pc) && !(FIFTH_OPTIONAL.has(c.suffix) && pc === fifth));
   const foreign = played.filter((pc) => !wanted.includes(pc));
   const bass = shapeMidi(shape)[0];
   const inversion = bass !== undefined && mod(bass, 12) !== rootPc;
   return { ok: missing.length === 0 && foreign.length === 0, missing, foreign, inversion };
 }
-
-export type ChordSet = 'basic' | 'plus' | 'seven' | 'barre';
-
-export interface ChordDef {
-  id: string;
-  set: ChordSet;
-  symbol: string;
-  /** Anzeigename, wenn es mehrere Griffe gibt: „F (klein)“, „F (Barré)“. */
-  label: string;
-  shape: string;
-  fingers: string | null;
-}
-
-/** Geprüfte Griffe (PLAN 4.6). */
-export const CHORDS: readonly ChordDef[] = [
-  { id: 'A', set: 'basic', symbol: 'A', label: 'A', shape: 'x02220', fingers: 'x01230' },
-  { id: 'D', set: 'basic', symbol: 'D', label: 'D', shape: 'xx0232', fingers: 'xx0132' },
-  { id: 'E', set: 'basic', symbol: 'E', label: 'E', shape: '022100', fingers: '023100' },
-  { id: 'Am', set: 'basic', symbol: 'Am', label: 'Am', shape: 'x02210', fingers: 'x02310' },
-  { id: 'Em', set: 'basic', symbol: 'Em', label: 'Em', shape: '022000', fingers: '023000' },
-  { id: 'Dm', set: 'basic', symbol: 'Dm', label: 'Dm', shape: 'xx0231', fingers: 'xx0231' },
-  { id: 'G', set: 'basic', symbol: 'G', label: 'G', shape: '320003', fingers: '210003' },
-  { id: 'C', set: 'basic', symbol: 'C', label: 'C', shape: 'x32010', fingers: 'x32010' },
-  { id: 'Fs', set: 'plus', symbol: 'F', label: 'F (klein)', shape: 'xx3211', fingers: 'xx3211' },
-  { id: 'Fmaj7', set: 'plus', symbol: 'Fmaj7', label: 'Fmaj7', shape: 'xx3210', fingers: 'xx3210' },
-  { id: 'Cadd9', set: 'plus', symbol: 'Cadd9', label: 'Cadd9', shape: 'x32030', fingers: null },
-  { id: 'Dsus4', set: 'plus', symbol: 'Dsus4', label: 'Dsus4', shape: 'xx0233', fingers: 'xx0134' },
-  { id: 'Dsus2', set: 'plus', symbol: 'Dsus2', label: 'Dsus2', shape: 'xx0230', fingers: 'xx0130' },
-  { id: 'Asus2', set: 'plus', symbol: 'Asus2', label: 'Asus2', shape: 'x02200', fingers: 'x01200' },
-  { id: 'Asus4', set: 'plus', symbol: 'Asus4', label: 'Asus4', shape: 'x02230', fingers: null },
-  { id: 'Em7', set: 'plus', symbol: 'Em7', label: 'Em7', shape: '022030', fingers: null },
-  { id: 'Am7', set: 'plus', symbol: 'Am7', label: 'Am7', shape: 'x02010', fingers: 'x02010' },
-  { id: 'Cmaj7', set: 'plus', symbol: 'Cmaj7', label: 'Cmaj7', shape: 'x32000', fingers: 'x32000' },
-  { id: 'E7', set: 'seven', symbol: 'E7', label: 'E7', shape: '020100', fingers: '020100' },
-  { id: 'A7', set: 'seven', symbol: 'A7', label: 'A7', shape: 'x02020', fingers: 'x02030' },
-  { id: 'D7', set: 'seven', symbol: 'D7', label: 'D7', shape: 'xx0212', fingers: 'xx0213' },
-  { id: 'G7', set: 'seven', symbol: 'G7', label: 'G7', shape: '320001', fingers: '320001' },
-  { id: 'C7', set: 'seven', symbol: 'C7', label: 'C7', shape: 'x32310', fingers: 'x32410' },
-  { id: 'B7', set: 'seven', symbol: 'B7', label: 'B7', shape: 'x21202', fingers: 'x21304' },
-  { id: 'Fb', set: 'barre', symbol: 'F', label: 'F (Barré)', shape: '133211', fingers: '134211' },
-  { id: 'Bm', set: 'barre', symbol: 'Bm', label: 'Bm', shape: 'x24432', fingers: 'x13421' },
-  { id: 'E5', set: 'barre', symbol: 'E5', label: 'E5', shape: '022xxx', fingers: '013xxx' },
-  { id: 'A5', set: 'barre', symbol: 'A5', label: 'A5', shape: 'x022xx', fingers: 'x013xx' },
-];
 
 /** Tonnamen, wie Ultimate Guitar sie für Akkorde schreibt. */
 export const UG_ROOTS = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B'] as const;

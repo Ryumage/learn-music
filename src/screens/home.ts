@@ -73,6 +73,11 @@ export function renderHome({ showInstallHint, baseUrl, store, due }: HomeOptions
           <div class="module-text"><h3>Akkordwechsel</h3><p>60 Sekunden zwischen zwei Akkorden wechseln, Bestwert pro Paar.</p></div>
           <span class="chev">${ICONS.chevron}</span>
         </a></li>
+        <li><a class="card module is-ready" href="#/library" data-testid="tool-library">
+          <span class="badge" aria-hidden="true">Ak</span>
+          <div class="module-text"><h3>Akkord-Bibliothek</h3><p>Alle Akkorde nachschlagen: 12 Grundtöne, 17 Typen, offene und Barré-Griffe.</p></div>
+          <span class="chev">${ICONS.chevron}</span>
+        </a></li>
         <li><a class="card module is-ready" href="#/stats" data-testid="tool-stats">
           <span class="badge" aria-hidden="true">%</span>
           <div class="module-text"><h3>Statistik</h3><p>Trefferquoten, Griffbrett-Heatmap und Schwachstellen.</p></div>

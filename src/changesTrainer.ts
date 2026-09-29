@@ -2,7 +2,8 @@ import { ChangeDetector, chordTemplate } from './audio/changeDetector';
 import { listen, micErrorText, type MicListener } from './audio/mic';
 import { beep } from './audio/pluck';
 import type { Store } from './learn/store';
-import { CHORDS, parseShape, shapeMidi } from './music/chords';
+import { gripById } from './music/chordLibrary';
+import { parseShape, shapeMidi } from './music/chords';
 import {
   CHANGES_MS,
   COUNT_IN_MS,
@@ -18,7 +19,7 @@ import {
 
 type WakeLock = { release: () => Promise<void> };
 
-const midisOf = (id: string) => shapeMidi(parseShape(CHORDS.find((c) => c.id === id)!.shape));
+const midisOf = (id: string) => shapeMidi(parseShape(gripById(id)!.shape));
 
 /**
  * Akkordwechsel-Trainer: 5 s einzählen, 1 Minute wechseln, dann die Zahl eintippen

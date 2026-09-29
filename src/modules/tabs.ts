@@ -6,13 +6,13 @@ import {
   chordSpoken,
   chordSymbol,
   chordTones,
-  CHORDS,
   parseChord,
   parseShape,
   shapeMidi,
   shapeString,
   type ChordSymbol,
 } from '../music/chords';
+import { CHORDS } from '../music/chordLibrary';
 import { fretDerivation, fretMidi, positionText, stringName, STRINGS, type StringNo } from '../music/guitar';
 import { noteName, type Lang } from '../music/names';
 import { fromMidi } from '../music/notes';
@@ -51,7 +51,7 @@ const ARC_LABEL: Record<Arc, string> = { tie: 'Haltebogen (nicht neu anschlagen)
 
 /** Capo-Shapes (PLAN M6). */
 export const CAPO_SHAPES = ['G', 'C', 'D', 'Em', 'Am', 'A', 'E', 'Dm'];
-const STACK_CHORDS = CHORDS.filter((c) => c.set === 'basic' || c.set === 'seven').map((c) => c.id);
+const STACK_CHORDS = CHORDS.filter((c) => c.sets.includes('basic') || c.sets.includes('seven')).map((c) => c.id);
 const HB = ['Bm', 'B7', 'Bb', 'B'] as const;
 const HB_SHAPES: Record<(typeof HB)[number], string> = { Bm: 'x24432', B7: 'x21202', Bb: 'x13331', B: 'x24442' };
 

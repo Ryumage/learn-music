@@ -6,16 +6,18 @@ import {
   chordSpoken,
   chordSymbol,
   chordTones,
-  CHORDS,
   formulaText,
   parseChord,
   parseShape,
   shapeMidi,
   shapeString,
-  type ChordDef,
+  SUFFIXES,
+  type ChordSuffix,
   type ChordSymbol,
   type Shape,
 } from '../music/chords';
+import { CLASSIC_SUFFIXES } from '../input/chordKeyboard';
+import { CHORDS, type ChordDef } from '../music/chordLibrary';
 import { OPEN_MIDI } from '../music/guitar';
 import { noteName, pitchClassLabel, type Lang } from '../music/names';
 import { fromMidi, mod, pitchClass, type Spelling } from '../music/notes';
@@ -32,10 +34,16 @@ export const LEARN_ORDER = ['A', 'D', 'E', 'Am', 'Em', 'Dm', 'C', 'G', 'Fs', 'Fm
 
 export const chordById = (id: string) => CHORDS.find((c) => c.id === id);
 
+/** Zusätze der Akkordtastatur: die bisherigen neun plus alle aus den gewählten Akkorden. */
+export function keyboardSuffixes(chords: readonly ChordDef[]): ChordSuffix[] {
+  const used = new Set<string>([...CLASSIC_SUFFIXES, ...chords.map((c) => parseChord(c.symbol).suffix)]);
+  return SUFFIXES.filter((s) => used.has(s));
+}
+
 function cfg(s: ModuleSettings): { tasks: Task[]; chords: ChordDef[] } {
   const sets = (s.sets as string[] | undefined)?.length ? (s.sets as string[]) : ['basic'];
   const task = (s.task as string) ?? 'mixed';
-  return { tasks: task === 'mixed' ? TASKS : [task as Task], chords: CHORDS.filter((c) => sets.includes(c.set)) };
+  return { tasks: task === 'mixed' ? TASKS : [task as Task], chords: CHORDS.filter((c) => c.sets.some((x) => sets.includes(x))) };
 }
 
 /** Deutsche Aussprache nur im Deutsch-Modus; Symbole bleiben international. */
@@ -176,6 +184,8 @@ export const chordsModule: ModuleDef = {
         { value: 'plus', label: 'F, Fmaj7, sus, add9, m7, maj7' },
         { value: 'seven', label: 'Septakkorde' },
         { value: 'barre', label: 'Barré & Powerchords' },
+        { value: 'dm24', label: 'Alle Dur & Moll (24)' },
+        { value: 'all', label: 'Ganze Bibliothek (204)' },
       ],
       default: ['basic'],
     },
@@ -200,7 +210,8 @@ export const chordsModule: ModuleDef = {
   },
   make(settings, ctx) {
     const key = ctx.forced ?? pickWeighted(this.keys(settings), ctx.stats, ctx.now, ctx.recent, ctx.rng);
-    return { ...build(key, ctx), hint: HINT };
+    const q = build(key, ctx);
+    return q.kind === 'chord' ? { ...q, hint: HINT, suffixes: keyboardSuffixes(cfg(settings).chords) } : { ...q, hint: HINT };
   },
   label(key, lang) {
     const def = chordById(key.slice(4));

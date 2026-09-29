@@ -41,6 +41,8 @@ export interface ChordShapeOptions {
   /** Tonnamen unter jeder Saite */
   names?: (string | null)[];
   frets?: number;
+  /** erster gezeigter Bund (Griff-Editor: vom Nutzer verschoben); sonst automatisch */
+  baseFret?: number;
   label: string;
 }
 
@@ -48,7 +50,7 @@ export interface ChordShapeOptions {
  * Akkorddiagramm: senkrecht, tiefe E-Saite links, × und ○ über dem Sattel,
  * Fingernummern in den Punkten, Barré als Balken, „3fr“ bei höheren Lagen.
  */
-export function renderChordShape({ shape, fingers, editable = false, states, names, frets = 5, label }: ChordShapeOptions): string {
+export function renderChordShape({ shape, fingers, editable = false, states, names, frets = 5, baseFret, label }: ChordShapeOptions): string {
   const gap = 36;
   const fretH = 42;
   const left = 26;
@@ -57,7 +59,7 @@ export function renderChordShape({ shape, fingers, editable = false, states, nam
   const width = left * 2 + gap * 5;
   const height = top + fretH * frets + 12 + nameH;
   const fretted = shape.filter((f): f is number => f !== null && f > 0);
-  const base = fretted.length && Math.max(...fretted) > frets ? Math.min(...fretted) : 1;
+  const base = baseFret ?? (fretted.length && Math.max(...fretted) > frets ? Math.min(...fretted) : 1);
   const p: string[] = [];
   const x = (i: number) => left + i * gap;
   const yFret = (f: number) => top + (f - base + 0.5) * fretH;
@@ -89,7 +91,7 @@ export function renderChordShape({ shape, fingers, editable = false, states, nam
     const cls = st ? ` cd-${st}` : '';
     if (f === null) p.push(`<text class="cd-mute${cls}" x="${cx}" y="${top - 16}" text-anchor="middle">×</text>`);
     else if (f === 0) p.push(`<circle class="cd-open${cls}" cx="${cx}" cy="${top - 22}" r="8"/>`);
-    else {
+    else if (f >= base && f < base + frets) {
       const finger = fingers?.[i];
       p.push(
         `<g class="cd-dot${cls}"><circle cx="${cx}" cy="${yFret(f)}" r="13"/>${finger && /[1-4]/.test(finger) ? `<text x="${cx}" y="${yFret(f) + 5}" text-anchor="middle">${finger}</text>` : ''}</g>`,
@@ -113,5 +115,7 @@ export function renderChordShape({ shape, fingers, editable = false, states, nam
       }
     });
   }
-  return `<svg class="chord-diagram${editable ? ' is-editable' : ''}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(label)}">${p.join('')}</svg>`;
+  // Platz links für die Lagen-Angabe („12fr“)
+  const pad = base > 1 || editable ? 18 : 0;
+  return `<svg class="chord-diagram${editable ? ' is-editable' : ''}" viewBox="${-pad} 0 ${width + pad} ${height}" role="img" aria-label="${esc(label)}">${p.join('')}</svg>`;
 }
