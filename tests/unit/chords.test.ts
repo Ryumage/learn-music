@@ -8,10 +8,13 @@ import {
   chordSpoken,
   chordSymbol,
   chordTones,
-  CHORDS,
   parseChord,
   parseShape,
 } from '../../src/music/chords';
+import { CHORDS as ALL_CHORDS } from '../../src/music/chordLibrary';
+
+/** die geprüften Griffe aus PLAN 4.6 (Sätze der ersten Version) */
+const CHORDS = ALL_CHORDS.filter((c) => c.sets.some((s) => ['basic', 'plus', 'seven', 'barre'].includes(s)));
 
 const tones = (symbol: string, lang: 'de' | 'en' = 'de') =>
   chordTones(parseChord(symbol)).map((t) => noteName(t, lang)).join(' ');

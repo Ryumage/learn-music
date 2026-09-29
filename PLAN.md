@@ -437,7 +437,9 @@ Element-Schlüssel `fret:s:f` (benennen), `find:s:f` (auf Saite finden), `fall:<
 Element-Schlüssel `chn:<id>` (Diagramm → Name), `chs:<id>` (Griff setzen), `cht:<id>` (Töne).
 
 **Einstellungen**
-- **Akkord-Sets:** 8 Grundakkorde (Default) / plus / seven / barre. Tabelle 4.6.
+- **Akkord-Sets:** 8 Grundakkorde (Default) / plus / seven / barre (Tabelle 4.6), dazu „Alle Dur & Moll (24)“ und „Ganze Bibliothek (204)“ aus der Akkord-Bibliothek (Issue #12).
+- Alle Akkorde und Griffe kommen aus der **Akkord-Bibliothek** (`src/music/chordLibrary.ts`): 12 Grundtöne × 17 Typen (Dur, m, 7, m7, maj7, 6, m6, 9, sus2, sus4, 7sus4, add9, dim, dim7, aug, m7b5, 5). Offene Griffe sind gepflegt, verschiebbare Griffe entstehen aus E- und A-Form. Jeder Griff ist per Unit-Test gegen die Formel geprüft.
+- Die Akkordtastatur zeigt die klassischen neun Zusätze plus alle Zusätze der gewählten Sätze. Der Griff-Editor lässt sich mit − / + in höhere Lagen verschieben.
 - **Aufgabe:** eine der drei oder gemischt.
 
 **Lernreihenfolge** (JustinGuitar): A, D → E → Am, Em → Dm → C, G → F/Fmaj7 → sus/7. G ist laut Chordonomicon (rund 680.000 Songs von Ultimate Guitar) der häufigste Akkord. G und C machen zusammen rund 24 % aller Akkorde aus.
@@ -549,13 +551,18 @@ Hälse zeigen nach unten, die Balken liegen unten, wie in den UG-Screenshots. Di
 - **Tempo:** ♩ = 60/80/100/120 → Dauer eines Schlags (60/bpm s) bzw. eines 4/4-Takts (240/bpm s). Beispiel: ♩ = 100 → 0,6 s bzw. 2,4 s. Deutsches Dezimalkomma.
 
 ### W – Akkordwechsel-Trainer (Werkzeug, kein Quiz)
-- Zwei Akkorde wählen (Grundakkorde, F, Fmaj7, Septakkorde), beide Diagramme anzeigen.
+- Zwei Akkorde wählen (Schnellwahl: Grundakkorde, F, Fmaj7, Septakkorde; jeder Griff der Akkord-Bibliothek über „Als Akkord 1/2“), beide Diagramme anzeigen.
 - Start → **5 s einzählen** (Signalton je Sekunde, Startton), dann 60 s Countdown mit Endton. Bildschirm wach halten (Wake Lock, Fehler still ignorieren).
 - **Zählen** (Issue #10): Keine Tippfläche während der Minute – zum Tippen bleibt beim Umgreifen keine Hand frei. Stattdessen:
   - **Selbst zählen** (Standard): im Kopf mitzählen, am Ende die Zahl auf dem eigenen Ziffernblock eintippen.
   - **Mikrofon (Beta, optional):** Anschläge erkennen, Tonklassen-Profil mit beiden Griffen vergleichen, zwei lernende Gruppen je Akkord → Wechsel. Das Ergebnis wird am Ende vorbelegt und lässt sich korrigieren. Ohne Mikrofon-Erlaubnis: selbst zählen. Nichts wird gespeichert oder verschickt.
 - Ergebnis und **Bestwert pro Paar** speichern. Richtwert: 30 Wechsel/min (JustinGuitar Grade 1).
 - Die gewählten Akkorde werden gemerkt. Dass das fehlt, ist die Hauptkritik an der Original-App „One Minute Changes“.
+
+### B – Akkord-Bibliothek (Werkzeug, Issue #12)
+- Menüpunkt auf der Übersicht. Grundton (12) und Akkordtyp (17 oder „Alle“) wählen; Auswahl wird gemerkt.
+- Je Akkord: Name (mit deutscher Aussprache), Formel, Töne und alle Griffe als Diagramm („offen“ bzw. „Grundton E-/A-Saite, n. Bund“).
+- Griff antippen: anhören; „Als Akkord 1/2“ übernimmt ihn in den Akkordwechsel-Trainer.
 
 ---
 

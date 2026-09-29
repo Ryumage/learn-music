@@ -47,7 +47,9 @@ export async function answer(page: Page, correct: boolean): Promise<void> {
       await cell(page, wrong.string, wrong.fret).click();
     }
   } else {
-    for (const f of p.fields!) {
+    for (const field of p.fields!) {
+      // Doppel-Vorzeichen (z. B. Heses in Cdim7) gibt es auf der Tastatur nicht: gleiche Tonklasse eingeben
+      const f = typeable(field);
       await page.locator(`[data-letter="${correct ? f.letter : (f.letter + 1) % 7}"]`).click();
       if (correct && f.acc !== 0) await page.locator(`[data-acc="${f.acc}"]`).click();
     }
@@ -55,8 +57,22 @@ export async function answer(page: Page, correct: boolean): Promise<void> {
   await page.getByTestId('check').click();
 }
 
-/** Setzt einen Griff im editierbaren Diagramm (Start: alle Saiten leer). */
+const STEPS = [0, 2, 4, 5, 7, 9, 11];
+
+/** Schreibweise mit höchstens einem Vorzeichen und derselben Tonklasse. */
+function typeable(n: { letter: number; acc: number }): { letter: number; acc: number } {
+  if (Math.abs(n.acc) <= 1) return n;
+  const pc = (STEPS[n.letter]! + n.acc + 24) % 12;
+  const natural = STEPS.indexOf(pc);
+  return natural >= 0 ? { letter: natural, acc: 0 } : { letter: STEPS.indexOf(pc - 1), acc: 1 };
+}
+
+/** Setzt einen Griff im editierbaren Diagramm (Start: alle Saiten leer, erste Lage). */
 export async function setShape(page: Page, shape: (number | null)[]): Promise<void> {
+  // hohe Lagen: Fenster erst verschieben (leere Saiten wandern nicht mit)
+  const fretted = shape.filter((f): f is number => f !== null && f > 0);
+  const base = fretted.length && Math.max(...fretted) > 5 ? Math.min(...fretted) : 1;
+  for (let b = 1; b < base; b++) await page.locator('[data-action=cd-base][data-step="1"]').click();
   for (const [i, f] of shape.entries()) {
     if (f === null) await page.locator(`[data-action=cd-open][data-index="${i}"]`).click();
     else if (f > 0) await page.locator(`[data-action=cd-cell][data-index="${i}"][data-fret="${f}"]`).click();

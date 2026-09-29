@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { ChangeCounter, ChangeDetector, chordScore, chordTemplate, chroma, fft } from '../../src/audio/changeDetector';
 import { karplusStrong, midiToFreq } from '../../src/audio/pluck';
-import { CHORDS, parseShape, shapeMidi } from '../../src/music/chords';
+import { CHORDS } from '../../src/music/chordLibrary';
+import { parseShape, shapeMidi } from '../../src/music/chords';
 import { CHANGE_CHORDS } from '../../src/screens/changes';
 
 const SR = 48000;
