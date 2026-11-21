@@ -52,10 +52,24 @@ for (const mod of ['tabs', 'rhythm']) {
 
 test('M6: alle Fragetypen erscheinen, H/B-Fragen im Deutsch-Modus', async ({ page }) => {
   test.setTimeout(240_000);
-  await start(page, 'tabs', [], '30');
-  const all = ['line', 'note', 'know', 'tech', 'arc', 'stack', 'capo', 'cfret', 'head', 'hb'].map((t) => `tab:${t}`);
-  const seen = await collectTypes(page, all.length, 150);
-  expect([...seen].sort()).toEqual(all.sort());
+  // Je Themenbereich eine eigene Runde: „tab:head“ hat nur 2 von 36 Schlüsseln, im Mix aller
+  // Bereiche (67 Schlüssel) wäre das Erscheinen in 150 Fragen nur Glückssache.
+  const topics: [string, string[], number][] = [
+    ['basics', ['line', 'note', 'know'], 60],
+    ['tech', ['tech', 'arc'], 60],
+    ['chords', ['stack', 'capo', 'cfret', 'head', 'hb'], 200],
+  ];
+  for (const [topic, types, max] of topics) {
+    // frischer Stand: gespeicherte Bereichs-Auswahl löschen und neu laden (sonst bleibt sie im Speicher)
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    const off = topics.map(([t]) => t).filter((t) => t !== topic);
+    await start(page, 'tabs', off, '30');
+    const want = types.map((t) => `tab:${t}`).sort();
+    const seen = await collectTypes(page, want.length, max);
+    // nur Fragen aus dem gewählten Bereich, und alle seine Fragetypen
+    expect([...seen].sort(), topic).toEqual(want);
+  }
 });
 
 test('M6: im Englisch-Modus keine H/B-Fragen', async ({ page }) => {

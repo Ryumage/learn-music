@@ -1803,8 +1803,9 @@ a.icon-btn {
   padding-left: 20px;
 }
 
-/* Querformat: Griffbrett als Abbildung (z. B. Pentatonik erkennen) nicht höher als ein halber Bildschirm */
-.quiz.is-landscape .quiz-body > .figure > svg.fretboard {
+/* Querformat: Griffbrett als Abbildung (z. B. Pentatonik erkennen) nicht höher als ein halber Bildschirm;
+   das Antipp-Griffbrett (.figure-board) behält die volle Breite */
+.quiz.is-landscape .quiz-body > .figure:not(.figure-board) > svg.fretboard {
   width: auto;
   max-width: 100%;
   max-height: 46dvh;
