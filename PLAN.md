@@ -550,6 +550,22 @@ Hälse zeigen nach unten, die Balken liegen unten, wie in den UG-Screenshots. Di
   - 6/8 = 6 Achtel, gefühlt 2 × 3 („1-und-a-2-und-a“)
 - **Tempo:** ♩ = 60/80/100/120 → Dauer eines Schlags (60/bpm s) bzw. eines 4/4-Takts (240/bpm s). Beispiel: ♩ = 100 → 0,6 s bzw. 2,4 s. Deutsches Dezimalkomma.
 
+### M8 – Powerchords (Issue #15)
+Element-Schlüssel `pwn:<saite>:<bund>` (erkennen), `pws:…` (Griff setzen), `pwf:…` (Grundton finden), `pwk:<id>` (Wissen).
+- **Einführung** auf der Modulseite: Grundton + Quinte (+ Oktave), keine Terz → weder Dur noch Moll; Griffe mit Grundton auf E-, A- und D-Saite (D: Oktave auf der H-Saite drei Bünde weiter); Riff mit Palm Mute zum Anhören.
+- **Aufgaben:** Powerchord aus Diagramm oder Tab erkennen (Grundton per Notentastatur), Griff setzen (Grundton auf der verlangten Saite im Bass, zwei oder drei Saiten), Grundton auf dem Griffbrett finden (Antippen, Querformat), Wissensfragen (Töne, Terz, Quinte/Oktave, Schreibweise „5“, Palm Mute, Verzerrung, Drop D).
+- **Einstellungen:** Grundton auf E/A/D-Saite (Standard E, A), Bünde 0–5 / 0–7 / 0–12 (Standard 0–7), mit ♯/♭ (Standard aus).
+
+### M9 – Pentatonik (Issue #14)
+Element-Schlüssel `pnt:<typ>:<grundton>:<pattern>` (Pattern greifen, Antippen aller 12 Töne), `pnw:…` (Pattern erkennen), `pnd:…` (Stufe eines markierten Tons).
+- Moll-Pentatonik 1 ♭3 4 5 ♭7, Dur-Pentatonik 1 2 3 5 6, alle 12 Grundtöne, je fünf Patterns mit zwei Tönen pro Saite (`src/music/pentatonic.ts`, per Test geprüft).
+- Pattern 1 = Box mit dem Moll-Grundton auf der tiefen E-Saite; die Dur-Pentatonik nutzt die Patterns ihrer parallelen Moll-Tonart (C-Dur = a-Moll). Liegt ein Pattern ganz ab Bund 12, wird es eine Oktave tiefer gezeigt.
+
+### P – Pentatonik-Patterns (Werkzeug, Issue #14)
+- Tonleiter (Moll/Dur) und Grundton wählen; Pattern „Alle“ mit Blättern (‹ ›) oder ein bestimmtes Pattern; Übersicht aller fünf Patterns.
+- Beschriftung Stufen oder Töne, Grundtöne hervorgehoben.
+- Abspielen auf und ab (Tempo 60/90/120), der gespielte Bund leuchtet auf. „Pattern üben“ startet M9 mit genau diesem Pattern.
+
 ### W – Akkordwechsel-Trainer (Werkzeug, kein Quiz)
 - Zwei Akkorde wählen (Schnellwahl: Grundakkorde, F, Fmaj7, Septakkorde; jeder Griff der Akkord-Bibliothek über „Als Akkord 1/2“), beide Diagramme anzeigen.
 - Start → **5 s einzählen** (Signalton je Sekunde, Startton), dann 60 s Countdown mit Endton. Bildschirm wach halten (Wake Lock, Fehler still ignorieren).

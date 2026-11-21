@@ -1684,3 +1684,129 @@ a.icon-btn {
   min-width: 48px;
   font-size: 1.3rem;
 }
+
+/* Modul-Einführung (z. B. Powerchords) */
+.module-intro {
+  margin-bottom: 14px;
+}
+
+.module-intro p {
+  margin: 0 0 10px;
+}
+
+.pw-shapes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.pw-shape {
+  margin: 0;
+  text-align: center;
+}
+
+.pw-shape svg {
+  width: 100%;
+  max-width: 120px;
+  height: auto;
+}
+
+.pw-riff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Pentatonik */
+.fb-marker.fb-root circle {
+  fill: var(--mid);
+}
+
+.fb-marker.fb-root text {
+  fill: #1a1200;
+}
+
+.fb-marker.is-playing circle {
+  fill: var(--ok);
+  stroke: var(--text);
+  stroke-width: 4;
+}
+
+.fb-marker.is-playing text {
+  fill: #fff;
+}
+
+.penta-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 8px 0;
+  font-weight: 700;
+}
+
+.penta-pager .btn {
+  min-width: 52px;
+  font-size: 1.4rem;
+}
+
+.penta-board {
+  margin: 6px 0 4px;
+}
+
+.penta-legend {
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.penta-actions {
+  margin-top: 12px;
+}
+
+.penta-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.penta-thumb {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.penta-thumb.is-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.penta-thumb svg {
+  width: 100%;
+  height: auto;
+}
+
+.penta-thumb-title {
+  font-weight: 700;
+}
+
+.penta-strings {
+  margin: 0 0 8px;
+  padding-left: 20px;
+}
+
+/* Querformat: Griffbrett als Abbildung (z. B. Pentatonik erkennen) nicht höher als ein halber Bildschirm;
+   das Antipp-Griffbrett (.figure-board) behält die volle Breite */
+.quiz.is-landscape .quiz-body > .figure:not(.figure-board) > svg.fretboard {
+  width: auto;
+  max-width: 100%;
+  max-height: 46dvh;
+}
