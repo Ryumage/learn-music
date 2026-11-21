@@ -18,6 +18,8 @@ import { renderHeatmap } from './render/heatmap';
 import { esc } from './util/html';
 import { renderSummary, summarize, type SummaryData } from './screens/summary';
 import { ChangesTrainer } from './changesTrainer';
+import { PentaTool } from './pentaTool';
+import { currentPattern } from './screens/penta';
 import type { CountMode } from './screens/changes';
 import { newLibraryUi, renderLibrary, type LibraryUi } from './screens/library';
 import { gripById } from './music/chordLibrary';
@@ -61,6 +63,7 @@ export class App {
   private lastModule: ModuleDef | null = null;
   private trainer: ChangesTrainer | null = null;
   private libUi: LibraryUi | null = null;
+  private penta: PentaTool | null = null;
   /** Griff-Editor: erster gezeigter Bund, gilt für eine Frage */
   private shapeBase: { question: unknown; base: number } = { question: null, base: 1 };
   private dataUi: DataUi = { exportText: '', importText: '', confirmImport: false, confirmReset: false, message: null };
@@ -73,6 +76,7 @@ export class App {
     window.addEventListener('hashchange', () => {
       // Trainer verlassen: laufende Runde beenden, ohne zu speichern
       if (this.trainer?.active && this.route().name !== 'changes') this.trainer.abort();
+      if (this.route().name !== 'penta') this.penta?.stop(false);
       // Meldungen und Rückfragen der Einstellungen gelten nur, solange man dort ist
       this.dataUi = { ...this.dataUi, confirmImport: false, confirmReset: false, message: null };
       this.render();
@@ -119,7 +123,7 @@ export class App {
     const h = location.hash.replace(/^#\/?/, '');
     const [name, id] = h.split('/');
     if (name === 'm' && id) return { name: 'setup', id };
-    if (['quiz', 'summary', 'settings', 'stats', 'changes', 'library'].includes(name ?? '')) return { name: name! };
+    if (['quiz', 'summary', 'settings', 'stats', 'changes', 'library', 'penta'].includes(name ?? '')) return { name: name! };
     return { name: 'home' };
   }
 
@@ -165,6 +169,8 @@ export class App {
       root.innerHTML = renderSettings(this.store.settings, this.dataUi, this.o.installed ?? false);
     } else if (r.name === 'changes') {
       root.innerHTML = this.changes().html();
+    } else if (r.name === 'penta') {
+      root.innerHTML = this.pentaTool().html();
     } else if (r.name === 'library') {
       const t = this.changes().state;
       root.innerHTML = renderLibrary(this.library(), { lang, trainer: { a: t.a, b: t.b } });
@@ -201,6 +207,11 @@ export class App {
   private shapeBaseFor(question: unknown): number {
     if (this.shapeBase.question !== question) this.shapeBase = { question, base: 1 };
     return this.shapeBase.base;
+  }
+
+  private pentaTool(): PentaTool {
+    this.penta ??= new PentaTool(this.store, this.o.root, () => this.render());
+    return this.penta;
   }
 
   /** Auswahl in der Akkord-Bibliothek; Grundton und Typ werden gemerkt. */
@@ -453,6 +464,25 @@ export class App {
         if (this.lastModule?.id === 'daily') return this.startDaily();
         if (this.lastModule) this.start(this.lastModule);
         return;
+      case 'penta-type':
+      case 'penta-root':
+      case 'penta-pattern':
+      case 'penta-page':
+      case 'penta-labels':
+      case 'penta-tempo':
+        return this.pentaTool().set(a, el.dataset.value ?? '');
+      case 'penta-play':
+        return this.pentaTool().toggle();
+      case 'penta-practice': {
+        // ausgewähltes Pattern im Modul „Pentatonik“ üben
+        const tool = this.pentaTool();
+        tool.stop(false);
+        const mod = findModule('penta')?.def;
+        if (!mod) return;
+        const s = tool.state;
+        this.store.setModuleSettings(mod.id, { ...this.moduleSettings(mod), type: s.type, root: String(s.root), patterns: [String(currentPattern(s))] });
+        return this.start(mod);
+      }
       case 'lib-root':
         this.library().root = Number(el.dataset.root);
         this.library().selected = null;

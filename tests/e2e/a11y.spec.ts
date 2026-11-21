@@ -28,6 +28,10 @@ for (const scheme of ['light', 'dark'] as const) {
       await check(page, 'changes');
       await page.goto('./#/m/staff');
       await check(page, 'setup');
+      await page.goto('./#/penta');
+      await check(page, 'penta');
+      await page.goto('./#/m/power');
+      await check(page, 'power setup');
       await page.goto('./#/library');
       await page.locator('[data-action=lib-pick]').first().click();
       await check(page, 'library');

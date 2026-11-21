@@ -1,5 +1,6 @@
 import { chordsModule } from './chords';
 import { fretboardModule } from './fretboard';
+import { pentaModule } from './pentatonic';
 import { powerModule } from './powerchords';
 import { readModule } from './readFret';
 import { rhythmModule } from './rhythm';
@@ -27,6 +28,7 @@ export const MODULES: readonly ModuleInfo[] = [
   { id: 'tabs', badge: 'M6', name: tabsModule.name, desc: 'Tab-Zeichen, Bögen, Akkorde und Capo wie auf Ultimate Guitar.', def: tabsModule },
   { id: 'rhythm', badge: 'M7', name: rhythmModule.name, desc: 'Notenwerte unter dem Tab, zählen, Schlagmuster, Tempo.', def: rhythmModule },
   { id: 'power', badge: 'M8', name: powerModule.name, desc: 'Grundton + Quinte: erkennen, greifen, finden – für Rock und Metal.', def: powerModule },
+  { id: 'penta', badge: 'M9', name: pentaModule.name, desc: 'Die fünf Patterns der Pentatonik greifen, erkennen und ihre Stufen benennen.', def: pentaModule },
 ];
 
 export function findModule(id: string): ModuleInfo | undefined {

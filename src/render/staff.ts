@@ -2,7 +2,7 @@ import { type Note } from '../music/notes';
 import { staffStep } from '../music/staff';
 import { esc } from '../util/html';
 
-export type MarkState = 'ok' | 'bad' | 'active' | 'solution' | null;
+export type MarkState = 'ok' | 'bad' | 'active' | 'solution' | 'root' | null;
 
 export interface StaffOptions {
   /** Spalten mit gleichzeitig klingenden Noten */
