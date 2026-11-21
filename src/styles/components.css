@@ -1684,3 +1684,37 @@ a.icon-btn {
   min-width: 48px;
   font-size: 1.3rem;
 }
+
+/* Modul-Einführung (z. B. Powerchords) */
+.module-intro {
+  margin-bottom: 14px;
+}
+
+.module-intro p {
+  margin: 0 0 10px;
+}
+
+.pw-shapes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.pw-shape {
+  margin: 0;
+  text-align: center;
+}
+
+.pw-shape svg {
+  width: 100%;
+  max-width: 120px;
+  height: auto;
+}
+
+.pw-riff {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}

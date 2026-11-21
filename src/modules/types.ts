@@ -155,6 +155,8 @@ export interface ModuleDef {
   /** Präfixe der Element-Schlüssel */
   prefixes: string[];
   settings: SettingDef[];
+  /** Einführung auf der Startseite des Moduls (HTML): erklären und zeigen */
+  intro?(lang: Lang): string;
   count(settings: ModuleSettings): number;
   /** erlaubte Elemente bei diesen Einstellungen (manche hängen von der Sprache ab, z. B. H/B-Fragen) */
   keys(settings: ModuleSettings, lang?: Lang): string[];

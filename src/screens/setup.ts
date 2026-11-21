@@ -57,6 +57,7 @@ export function renderSetup(mod: ModuleDef, settings: ModuleSettings, store: Sto
       </header>
       <p class="lead">${esc(mod.desc)}</p>
       <p class="muted" data-testid="module-stats">${esc(statsLine(summary))}</p>
+      ${mod.intro ? `<section class="card module-intro" data-testid="module-intro">${mod.intro(lang)}</section>` : ''}
       <section class="card settings-card">${rows}</section>
       <div class="actions">
         <button type="button" class="btn btn-primary" data-action="start" data-testid="start">Los geht’s · ${count} ${mod.id === 'staff' ? (count === 1 ? 'Zeile' : 'Zeilen') : 'Fragen'}</button>

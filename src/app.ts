@@ -405,6 +405,14 @@ export class App {
       }
       case 'listen':
         return this.playQuestion();
+      case 'play-seq': {
+        // Klangfolge aus der Seite, z. B. ein Riff: „40,47,52;43,50,55“
+        const seq = (el.dataset.seq ?? '').split(';').map((ch) => ch.split(',').map(Number));
+        setSoundEnabled(true);
+        playSequence(seq, Number(el.dataset.gap ?? 0.5));
+        setSoundEnabled(this.store.settings.sound);
+        return;
+      }
       case 'install-hint-hide':
         this.store.settings.installHintHidden = true;
         this.store.save();
